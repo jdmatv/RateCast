@@ -27,7 +27,8 @@ pre_gen_decompose_drivers:
         metrics, or activities that, if they change or occur, are expected to significantly influence the
         outcome of the scenario defined by the 'question', 'background', and 'resolution_criteria'. Each driver should 
         be conceptually distinct, specific enough to be conceptually trackable or assessable, and clearly derived from 
-        your 'factor_consideration'. Try to avoid specific dates.
+        your 'factor_consideration'. It should cause change in the outcome, and not the other way around.
+         Try to avoid specific dates.
 
     Important Guidelines:
 
@@ -62,28 +63,21 @@ pre_question_to_queries:
         A concise (1-2 sentences) summary of the primary information needed to address the 'question',
         based on your analysis of the 'question', 'background', and 'resolution_criteria'. This should highlight the key
         themes, entities, events, or concepts that require further research via Wikipedia queries to build a
-        foundational understanding of the scenario.
+        foundational understanding of whether the scenario is likely.
 
     2.  "scratchpad_queries":
         A textual area for you to brainstorm and list potential Wikipedia search queries. Think broadly about
-        the 'question', 'background', and 'resolution_criteria'. Consider items such as:
-        - Key entities (people, organizations, specific events, technologies, locations) mentioned or implied.
-        - Historical context, origins, timelines, or precedents relevant to the question.
-        - Underlying concepts, theories, definitions, or mechanisms that need explanation.
-        - Related broader topics or more specific sub-topics for deeper dives into particular aspects.
-        - Potential data points, statistics, case studies, or established knowledge that Wikipedia might contain.
-        This section should clearly show your thought process and exploration of different query ideas before
-        finalizing the list. (Aim for several lines of varied ideas, demonstrating your brainstorming).
+        the 'question', 'background', and 'resolution_criteria'. This section should clearly show your thought 
+        process and exploration of different query ideas before finalizing the list. (Aim for several lines of 
+        varied ideas, demonstrating your brainstorming).
 
     3.  "wikipedia_queries":
         A JSON array of 4 to 8 distinct and effective Wikipedia page search query strings. These queries should be
         derived from your 'scratchpad_queries' and specifically designed to find Wikipedia pages offering factual
         context, detailed explanations, historical data, or other relevant information for comprehensively
-        understanding the scenario outlined by the 'question', 'background', and 'resolution_criteria'.
+        understanding the likelihood of the scenario outlined by the 'question', 'background', and 'resolution_criteria'.
         - Queries should be specific enough to yield targeted results yet broad enough to capture comprehensive
           encyclopedic articles if they exist.
-        - Formulate queries as if you were typing into the Wikipedia search bar (e.g., "History of [key concept]",
-          "[Relevant entity] activities", "Impact of [event mentioned] on [relevant area]", "Definition of [core term]").
 
     Important Guidelines:
 

@@ -38,7 +38,7 @@ def get_wiki_summary(title: str) -> str:
     page = wiki_wiki.page(title)
     
     if not page.exists():
-        raise ValueError(f"Page '{title}' does not exist on Wikipedia.")
+        return f"Page '{title}' does not exist on Wikipedia."
     
     return page.summary
 
@@ -53,8 +53,4 @@ def get_wiki_full_text(title: str) -> str:
         raise ValueError(f"Page '{title}' does not exist on Wikipedia.")
     
     return page.text
-
-wiki1 = get_wiki_summary(search_wiki("Python programming language", 1)[0])
-print(wiki1)
-
 
