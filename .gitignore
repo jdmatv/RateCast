@@ -1,0 +1,19 @@
+# OS generated files
+.DS_Store
+
+# Python
+__pycache__/
+.env
+*.log
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Virtual environment
+.venv/
+
+# Misc
+/cache/
+/tmp/
+/temp/
+/logs/
