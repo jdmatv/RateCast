@@ -1,7 +1,12 @@
 import json
+import requests
+import os
+
+METACULUS_TOKEN = os.getenv("METACULUS_TOKEN")
+API_BASE_URL = "https://www.metaculus.com/api"
+AUTH_HEADERS = {"headers": {"Authorization": f"Token {METACULUS_TOKEN}"}}
 
 def list_posts_from_tournament(
-    api_base_url: str,
     tournament_id: int, 
     offset: int = 0, 
     count: int = 50
@@ -24,7 +29,7 @@ def list_posts_from_tournament(
         "statuses": "open",
         "include_description": "true",
     }
-    url = f"{api_base_url}/posts/"
+    url = f"{API_BASE_URL}/posts/"
     response = requests.get(url, **AUTH_HEADERS, params=url_qparams)  # type: ignore
     if not response.ok:
         raise Exception(response.text)
@@ -32,10 +37,9 @@ def list_posts_from_tournament(
     return data
 
 def get_open_question_ids_from_tournament(
-    api_base_url: str,
     tournament_id: int
 ) -> list[tuple[int, int]]:
-    posts = list_posts_from_tournament(api_base_url, tournament_id)
+    posts = list_posts_from_tournament(tournament_id)
 
     post_dict = dict()
     for post in posts["results"]:
@@ -54,3 +58,6 @@ def get_open_question_ids_from_tournament(
                 open_question_id_post_id.append((question["id"], post_id))
 
     return open_question_id_post_id
+
+def get_open_questions_25q2():
+    return get_open_question_ids_from_tournament(tournament_id = "32721")
