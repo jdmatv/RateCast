@@ -25,7 +25,7 @@ class PromptManager:
                         print(f"Error loading YAML from {filename}: {e}")
                         continue
 
-    def get_prompt(self, prompt_name):
+    def get_prompt(self, prompt_name: str):
         """
         Retrieves a prompt template by its name.
         Returns a dictionary with 'system_message' and 'user_template' (if applicable).
@@ -34,7 +34,7 @@ class PromptManager:
             raise ValueError(f"Prompt '{prompt_name}' not found.")
         return self.prompts[prompt_name]
 
-    def render_prompt(self, prompt_name, **kwargs):
+    def render_prompt(self, prompt_name: str, **kwargs) -> list[dict]:
         """
         Renders the system and user message templates for a given prompt,
         inserting provided variables.
