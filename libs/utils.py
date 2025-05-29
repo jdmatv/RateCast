@@ -51,13 +51,35 @@ def get_open_question_ids_from_tournament(
     for post_id, questions in post_dict.items():
         for question in questions:
             if question.get("status") == "open":
-                print(
-                    f"ID: {question['id']}\nQ: {question['title']}\nCloses: "
-                    f"{question['scheduled_close_time']}"
-                )
                 open_question_id_post_id.append((question["id"], post_id))
 
     return open_question_id_post_id
 
+def get_post_details(post_id: int) -> dict:
+    """
+    Get all details about a post from the Metaculus API.
+    """
+    url = f"{API_BASE_URL}/posts/{post_id}/"
+    response = requests.get(
+        url,
+        **AUTH_HEADERS,  # type: ignore
+    )
+    if not response.ok:
+        raise Exception(response.text)
+    details = json.loads(response.content)
+    return details
+
 def get_open_questions_25q2():
-    return get_open_question_ids_from_tournament(tournament_id = "32721")
+    open_qs = get_open_question_ids_from_tournament(tournament_id = "32721")
+    return [get_post_details(post_id) for _, post_id in open_qs]
+
+def get_question_metadata(post_details: dict) -> str:
+    """
+    Get the question text from the post details.
+    """
+    question = post_details.get('question').get('title', '')
+    description = post_details.get('question').get('description', '')
+    resolution_criteria = post_details.get('question').get('resolution_criteria', '')
+    fine_print = post_details.get('question').get('fine_print', '')
+
+    return question, description, resolution_criteria, fine_print

@@ -1,3 +1,3 @@
-from libs.service import *
+from libs.utils import *
 
-print(get_open_questions_25q2())
+qs = get_open_questions_25q2()
