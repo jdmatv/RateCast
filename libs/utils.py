@@ -69,17 +69,21 @@ def get_post_details(post_id: int) -> dict:
     details = json.loads(response.content)
     return details
 
-def get_open_questions_25q2():
-    open_qs = get_open_question_ids_from_tournament(tournament_id = "32721")
-    return [get_post_details(post_id) for _, post_id in open_qs]
-
-def get_question_metadata(post_details: dict) -> str:
+def get_question_metadata(post_id: int) -> str:
     """
-    Get the question text from the post details.
+    Get the question text from the post id.
     """
+    post_details = get_post_details(post_id)
     question = post_details.get('question').get('title', '')
     description = post_details.get('question').get('description', '')
     resolution_criteria = post_details.get('question').get('resolution_criteria', '')
     fine_print = post_details.get('question').get('fine_print', '')
 
-    return question, description, resolution_criteria, fine_print
+    return {"question": question,
+            "description": description,
+            "resolution_criteria": resolution_criteria,
+            "fine_print": fine_print}
+
+def get_open_questions_25q2():
+    open_qs = get_open_question_ids_from_tournament(tournament_id = "32721")
+    return [get_question_metadata(post_id) for _, post_id in open_qs]
