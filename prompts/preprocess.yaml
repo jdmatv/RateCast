@@ -26,9 +26,10 @@ pre_gen_decompose_drivers:
         A JSON array of 4 to 8 distinct string elements. These elements are the key drivers: the critical events,
         metrics, or activities that, if they change or occur, are expected to significantly influence the
         outcome of the scenario defined by the 'question', 'background', and 'resolution_criteria'. Each driver should 
-        be conceptually distinct, specific enough to be conceptually trackable or assessable, and clearly derived from 
-        your 'factor_consideration'. It should cause change in the outcome, and not the other way around.
-         Try to avoid specific dates or time frames in the drivers, focusing instead on the nature of the change.
+        be conceptually distinct, detailed with respect to the question, specific enough to be conceptually trackable or
+        assessable, and clearly derived from your 'factor_consideration'. It should cause change in the outcome, and not the 
+        other way around. Try to avoid specific dates or time frames in the drivers, focusing instead on the nature of the 
+        change.
 
     Important Guidelines:
 
@@ -78,7 +79,8 @@ pre_question_to_queries:
         context, detailed explanations, historical data, or other relevant information for comprehensively
         understanding the likelihood of the scenario outlined by the 'question', 'background', and 'resolution_criteria'.
         - Queries should be specific enough to yield targeted results yet broad enough to capture comprehensive
-          encyclopedic articles if they exist.
+          encyclopedic articles if they exist. They should not include specific dates, time frames, years, or quarters, focusing 
+          instead on the nature of the information needed with respect to the question.
 
     Important Guidelines:
 
@@ -132,7 +134,8 @@ pre_drivers_to_queries:
         context, detailed explanations, historical data, or other relevant information for understanding the 'driver's'
         influence on the scenario outlined by the 'question' and 'background_info'.
         - Queries should be specific enough to yield targeted results yet broad enough to capture comprehensive
-          encyclopedic articles if they exist.
+          encyclopedic articles if they exist. They should not include specific dates, time frames, years, or quarters, focusing 
+          instead on the nature of the information needed with respect to the question.
 
     Important Guidelines:
 

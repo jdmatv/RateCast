@@ -280,7 +280,6 @@ class CompletionsService:
         Generic method to get completion. Determines provider based on model name.
         """
         full_model_name = MODEL_NAME_DIC.get(model_name, model_name)
-        print(f"Using model: {full_model_name} for completion.")
 
         if "claude" in full_model_name.lower():
             return self.get_anthropic_completion(full_model_name, messages, temperature, max_tokens)
@@ -291,14 +290,3 @@ class CompletionsService:
         else:
             print(f"Warning: Provider for model '{full_model_name}' not explicitly determined. Defaulting to OpenAI.")
             return self.get_openai_completion(full_model_name, messages, temperature, max_tokens)
-
-def get_ollama_completion(model_name, messages):
-    """
-    Get completion from Ollama model.
-    """
-    try:
-        response = ollama.chat(model=model_name, messages=messages)
-        return response['message']['content']
-    except Exception as e:
-        print(f"Error in get_ollama_completion: {e}")
-        raise

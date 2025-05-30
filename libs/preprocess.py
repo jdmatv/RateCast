@@ -19,7 +19,7 @@ def decompose_drivers(question_metadata: dict) -> list[str]:
     service = CompletionsService()
     response = service.get_completion(
         messages=messages,
-        model_name="qwen3:1.7b"
+        model_name="qwen3:4b"
     )
 
     class DecomposedDriversResponse(BaseModel):
@@ -48,12 +48,12 @@ def question_to_queries(question_metadata: dict) -> list[str]:
     service = CompletionsService()
     response = service.get_completion(
         messages=messages,
-        model_name="qwen3:1.7b",
+        model_name="qwen3:4b",
     )
 
     class QueriesResponse(BaseModel):
         information_need_summary: str
-        scratchpad_query_brainstrom: Union[str, list[str]]
+        scratchpad_query_brainstorm: Union[str, list[str]]
         wikipedia_queries: list[str]
 
     try:
@@ -81,12 +81,12 @@ def drivers_to_queries(
     service = CompletionsService()
     response = service.get_completion(
         messages=messages,
-        model_name="qwen3:1.7b"
+        model_name="qwen3:4b"
     )
 
     class DriversQueriesResponse(BaseModel):
         driver_understanding: str
-        scratchpad_query_brainstrom: Union[str, list[str]]
+        scratchpad_query_brainstorm: Union[str, list[str]]
         wikipedia_queries: list[str]
 
     try:
@@ -102,7 +102,6 @@ def get_all_wiki_queries(
     Get all Wikipedia queries for a question.
     """
 
-    print("Generating drivers and queries for question:", question_metadata.get("question", ""))
     drivers = decompose_drivers(question_metadata)
     queries = question_to_queries(question_metadata)
 

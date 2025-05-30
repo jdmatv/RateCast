@@ -20,7 +20,6 @@ class PromptManager:
                     try:
                         file_prompts = yaml.safe_load(f)
                         self.prompts.update(file_prompts)
-                        print(f"Loaded prompts from: {filename}")
                     except yaml.YAMLError as e:
                         print(f"Error loading YAML from {filename}: {e}")
                         continue
