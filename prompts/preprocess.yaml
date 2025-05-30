@@ -28,7 +28,7 @@ pre_gen_decompose_drivers:
         outcome of the scenario defined by the 'question', 'background', and 'resolution_criteria'. Each driver should 
         be conceptually distinct, specific enough to be conceptually trackable or assessable, and clearly derived from 
         your 'factor_consideration'. It should cause change in the outcome, and not the other way around.
-         Try to avoid specific dates.
+         Try to avoid specific dates or time frames in the drivers, focusing instead on the nature of the change.
 
     Important Guidelines:
 
@@ -36,7 +36,8 @@ pre_gen_decompose_drivers:
     Focus on the 'question' itself.
     - The 'factor_consideration' should provide the reasoning and context that logically leads to the selection
       of items in the 'drivers_list'.
-    - Strive for clarity and precision in your language. Do not use external knowledge beyond what is provided.
+    - Strive for clarity and precision in your language. Do not use external knowledge beyond what is provided. Do not
+    include dates or quarters in the drivers. Think of drivers as key indicators or factors.
 
 
     <question> {{ question }} </question>
@@ -65,7 +66,7 @@ pre_question_to_queries:
         themes, entities, events, or concepts that require further research via Wikipedia queries to build a
         foundational understanding of whether the scenario is likely.
 
-    2.  "scratchpad_queries":
+    2.  "scratchpad_query_brainstorm":
         A textual area for you to brainstorm and list potential Wikipedia search queries. Think broadly about
         the 'question', 'background', and 'resolution_criteria'. This section should clearly show your thought 
         process and exploration of different query ideas before finalizing the list. (Aim for several lines of 
@@ -73,7 +74,7 @@ pre_question_to_queries:
 
     3.  "wikipedia_queries":
         A JSON array of 4 to 8 distinct and effective Wikipedia page search query strings. These queries should be
-        derived from your 'scratchpad_queries' and specifically designed to find Wikipedia pages offering factual
+        derived from your 'scratchpad_query_brainstorm' and specifically designed to find Wikipedia pages offering factual
         context, detailed explanations, historical data, or other relevant information for comprehensively
         understanding the likelihood of the scenario outlined by the 'question', 'background', and 'resolution_criteria'.
         - Queries should be specific enough to yield targeted results yet broad enough to capture comprehensive
@@ -83,7 +84,7 @@ pre_question_to_queries:
 
     - All outputs must be directly derived from and be highly relevant to the provided 'question', 'background', and 
     'resolution_criteria'. Focus on the 'question' primarily.
-    - The 'scratchpad_queries' section should reflect a genuine brainstorming process that logically informs your final
+    - The 'scratchpad_query_brainstorm' section should reflect a genuine brainstorming process that logically informs your final
       selection in 'wikipedia_queries'.
     - The 'wikipedia_queries' should be actionable and optimized for Wikipedia's search engine and content structure.
     - Do not use external knowledge beyond what is provided in the inputs. Focus solely on generating queries based on the given context.
@@ -114,7 +115,7 @@ pre_drivers_to_queries:
         must clearly articulate how this 'driver' specifically relates to the 'question' and 'background_info',
         and how it might influence the scenario described.
 
-    2.  "scratchpad_queries":
+    2.  "scratchpad_query_brainstorm":
         A textual area for you to brainstorm and list potential Wikipedia search queries. Think broadly about
         the 'driver' in the context of the 'question' and 'background_info'. Consider items such as:
         - Key entities (people, organizations, specific events, technologies, locations) associated with the driver.
@@ -127,7 +128,7 @@ pre_drivers_to_queries:
 
     3.  "wikipedia_queries":
         A JSON array of 4 to 8 distinct and effective Wikipedia page search query strings. These queries should be
-        derived from your 'scratchpad_queries' and specifically designed to find Wikipedia pages offering factual
+        derived from your 'scratchpad_query_brainstorm' and specifically designed to find Wikipedia pages offering factual
         context, detailed explanations, historical data, or other relevant information for understanding the 'driver's'
         influence on the scenario outlined by the 'question' and 'background_info'.
         - Queries should be specific enough to yield targeted results yet broad enough to capture comprehensive
@@ -137,7 +138,7 @@ pre_drivers_to_queries:
 
     - All outputs must be directly derived from and be highly relevant to the provided 'driver', 'question', 'background',
     and 'resolution_criteria'. Focus on the 'driver' primarily.
-    - The 'scratchpad_queries' section should reflect a genuine brainstorming process that logically informs your final
+    - The 'scratchpad_query_brainstorm' section should reflect a genuine brainstorming process that logically informs your final
       selection in 'wikipedia_queries'.
     - The 'wikipedia_queries' should be actionable and optimized for Wikipedia's search engine and content structure.
     - Do not use external knowledge beyond what is provided in the inputs. Focus solely on generating queries based on the given context.

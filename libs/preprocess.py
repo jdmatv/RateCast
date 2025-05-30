@@ -2,6 +2,7 @@ from libs.service import CompletionsService
 from config import prompt_manager
 from pydantic import BaseModel, ValidationError
 from apis.wikipedia import search_wiki, get_wiki_summary
+from typing import Union
 
 def decompose_drivers(question_metadata: dict) -> list[str]:
     """
@@ -18,7 +19,7 @@ def decompose_drivers(question_metadata: dict) -> list[str]:
     service = CompletionsService()
     response = service.get_completion(
         messages=messages,
-        model_name="o4-mini"
+        model_name="qwen3:1.7b"
     )
 
     class DecomposedDriversResponse(BaseModel):
@@ -47,13 +48,12 @@ def question_to_queries(question_metadata: dict) -> list[str]:
     service = CompletionsService()
     response = service.get_completion(
         messages=messages,
-        model_name="gpt-4.1-mini",
-        temperature=0.6,
+        model_name="qwen3:1.7b",
     )
 
     class QueriesResponse(BaseModel):
         information_need_summary: str
-        scratchpad_queries: str
+        scratchpad_query_brainstrom: Union[str, list[str]]
         wikipedia_queries: list[str]
 
     try:
@@ -81,13 +81,12 @@ def drivers_to_queries(
     service = CompletionsService()
     response = service.get_completion(
         messages=messages,
-        model_name="gpt-4.1-mini",
-        temperature=0.6,
+        model_name="qwen3:1.7b"
     )
 
     class DriversQueriesResponse(BaseModel):
         driver_understanding: str
-        scratchpad_queries: str
+        scratchpad_query_brainstrom: Union[str, list[str]]
         wikipedia_queries: list[str]
 
     try:
@@ -103,6 +102,7 @@ def get_all_wiki_queries(
     Get all Wikipedia queries for a question.
     """
 
+    print("Generating drivers and queries for question:", question_metadata.get("question", ""))
     drivers = decompose_drivers(question_metadata)
     queries = question_to_queries(question_metadata)
 
@@ -135,8 +135,7 @@ def wiki_summary_relevance(
     service = CompletionsService()
     response = service.get_completion(
         messages=messages,
-        model_name="gpt-4.1-mini",
-        temperature=0.4,
+        model_name="qwen3:1.7b"
     )
 
     class RelevanceResponse(BaseModel):
@@ -154,7 +153,7 @@ def search_wiki_rank(
     queries: list[str],
     drivers: list[str],
     question_metadata: dict,
-    max_results: int = 5
+    max_results: int = 3
 ) -> list[str]:
     """
     Search Wikipedia for the given queries and return the top results.

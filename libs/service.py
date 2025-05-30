@@ -1,8 +1,7 @@
-import openai
-import anthropic
 import os
 import json
 import csv
+import ollama
 from datetime import datetime
 import requests
 from typing import Optional
@@ -25,7 +24,13 @@ MODEL_NAME_DIC = {
     'sonnet 3.7': 'claude-3-7-sonnet-latest',
     'o4-mini': 'o4-mini',
     'o3': 'o3',
-    'gpt-4.1-mini': 'gpt-4.1-mini' 
+    'gpt-4.1-mini': 'gpt-4.1-mini',
+    'qwen3:0.6b': 'ollama/qwen3:0.6b',
+    'qwen3:1.7b': 'ollama/qwen3:1.7b',
+    'qwen3:4b': 'ollama/qwen3:4b',
+    'qwen3:8b': 'ollama/qwen3:8b',
+    'qwen3:14b': 'ollama/qwen3:14b',
+    'llama3.2': 'ollama/llama3.2:latest'
 }
 
 def map_api_model_to_balance_key(api_model_name, initial_balance_keys):
@@ -249,6 +254,20 @@ class CompletionsService:
             print(f"Error in get_anthropic_completion: {e}")
             self._update_balances_and_log(model_name, "Anthropic_Error", 0, 0)
             raise
+    
+    def get_ollama_completion(self, model_name, messages):
+        """
+        Get completion from Ollama model.
+        """
+        try:
+            model_name = model_name.split('ollama/')[-1]
+            response = ollama.chat(model=model_name, messages=messages)
+            completion_content = response['message']['content']
+            clean_output = completion_content.split('</think>')[-1].strip()
+            return clean_output
+        except Exception as e:
+            print(f"Error in get_ollama_completion: {e}")
+            self._update_balances_and_log(model_name, "Ollama_Error", 0, 0)
 
     def get_completion(
             self, 
@@ -261,11 +280,25 @@ class CompletionsService:
         Generic method to get completion. Determines provider based on model name.
         """
         full_model_name = MODEL_NAME_DIC.get(model_name, model_name)
+        print(f"Using model: {full_model_name} for completion.")
 
         if "claude" in full_model_name.lower():
             return self.get_anthropic_completion(full_model_name, messages, temperature, max_tokens)
-        elif "gpt" in full_model_name.lower() or full_model_name.lower().startswith('o'):
+        elif any(keyword in full_model_name.lower() for keyword in ["gpt", "o3", "o4"]):
             return self.get_openai_completion(full_model_name, messages, temperature, max_tokens)
+        elif "ollama" in full_model_name.lower():
+            return self.get_ollama_completion(full_model_name, messages)
         else:
             print(f"Warning: Provider for model '{full_model_name}' not explicitly determined. Defaulting to OpenAI.")
             return self.get_openai_completion(full_model_name, messages, temperature, max_tokens)
+
+def get_ollama_completion(model_name, messages):
+    """
+    Get completion from Ollama model.
+    """
+    try:
+        response = ollama.chat(model=model_name, messages=messages)
+        return response['message']['content']
+    except Exception as e:
+        print(f"Error in get_ollama_completion: {e}")
+        raise
