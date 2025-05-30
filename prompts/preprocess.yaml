@@ -4,7 +4,7 @@ pre_gen_decompose_drivers:
     Your primary function is to assist a forecasting process by deeply analyzing a question and its background
     information to identify the critical drivers and underlying factors that will shape the outcome. You excel at
     dissecting complex problems into their constituent parts, thinking through interconnected systems, and pinpointing
-    key variables that determine future developments.
+    key variables that determine future developments{{ think }}.
   user_template: >
     Given the 'question', 'description', and 'resolution_criteria' provided below, please perform a thorough analysis to identify
     key drivers influencing the potential outcome.
@@ -26,7 +26,7 @@ pre_gen_decompose_drivers:
         A JSON array of 4 to 8 distinct string elements. These elements are the key drivers: the critical events,
         metrics, or activities that, if they change or occur, are expected to significantly influence the
         outcome of the scenario defined by the 'question', 'background', and 'resolution_criteria'. Each driver should 
-        be conceptually distinct, detailed with respect to the question, specific enough to be conceptually trackable or
+        be conceptually distinct, detailed with respect to the question context, specific enough to be conceptually trackable or
         assessable, and clearly derived from your 'factor_consideration'. It should cause change in the outcome, and not the 
         other way around. Try to avoid specific dates or time frames in the drivers, focusing instead on the nature of the 
         change.
@@ -38,7 +38,7 @@ pre_gen_decompose_drivers:
     - The 'factor_consideration' should provide the reasoning and context that logically leads to the selection
       of items in the 'drivers_list'.
     - Strive for clarity and precision in your language. Do not use external knowledge beyond what is provided. Do not
-    include dates or quarters in the drivers. Think of drivers as key indicators or factors.
+    include dates or quarters in the drivers. Think of drivers as key indicators or factors. Be specific.
 
 
     <question> {{ question }} </question>
@@ -53,11 +53,11 @@ pre_question_to_queries:
     Your primary function is to support a forecasting process by deconstructing a question and its
     background information into effective Wikipedia search queries. Given a question and background
     information, you excel at identifying key information gaps and brainstorming targeted queries to
-    gather relevant context from Wikipedia.
+    gather relevant context and historical precedent to inform baserates from Wikipedia{{ think }}.
   user_template: >
     You are tasked with generating targeted Wikipedia search queries based on the provided 'question',
     'background', and 'resolution_criteria'. Your goal is to formulate queries that will help gather the necessary context
-    to understand the scenario and address the question comprehensively.
+    and historical precedent to understand the scenario, address the question comprehensively, and develop baserates.
 
     Please provide your response as a valid JSON object with the following exact fields, in this order:
 
@@ -74,13 +74,13 @@ pre_question_to_queries:
         varied ideas, demonstrating your brainstorming).
 
     3.  "wikipedia_queries":
-        A JSON array of 4 to 8 distinct and effective Wikipedia page search query strings. These queries should be
+        A JSON array of 4 to 8 distinct and effective Wikipedia page searchbar entry query strings. These queries should be
         derived from your 'scratchpad_query_brainstorm' and specifically designed to find Wikipedia pages offering factual
         context, detailed explanations, historical data, or other relevant information for comprehensively
         understanding the likelihood of the scenario outlined by the 'question', 'background', and 'resolution_criteria'.
         - Queries should be specific enough to yield targeted results yet broad enough to capture comprehensive
-          encyclopedic articles if they exist. They should not include specific dates, time frames, years, or quarters, focusing 
-          instead on the nature of the information needed with respect to the question.
+          encyclopedic articles if they exist. They should not include specific dates, time frames, years, quarters, or hyperlinks,
+          focusing instead on the nature of the specific information needed with respect to the question.
 
     Important Guidelines:
 
@@ -103,12 +103,13 @@ pre_drivers_to_queries:
     You are an AI assistant specialized in information retrieval strategy and targeted query formulation.
     Your primary function is to support a forecasting process by translating identified key drivers of change
     into effective Wikipedia search queries. Given a question, background information, resolution criteria,
-    and a specific driver, you excel at understanding the driver's contextual significance and brainstorming specific 
-    queries to gather relevant information from Wikipedia.
+    and a specific driver, you excel at understanding the driver's contextual significance and brainstorming targeted queries to
+    gather relevant context and historical precedent to inform baserates from Wikipedia{{ think }}.
   user_template: >
     You are tasked with generating targeted Wikipedia search queries for a given 'driver' in the context
     of a 'question', 'background', and 'resolution_criteria'. Your goal is to formulate queries that will help gather
-    the necessary context to understand the driver's potential impact on the scenario.
+    the necessary context and historical precedent to understand the driver's potential impacts on the scenario and
+    develop baserates.
 
     Provide your response as a valid JSON object with the following exact fields, in this order:
 
@@ -129,13 +130,13 @@ pre_drivers_to_queries:
         the list. (Aim for several lines of varied ideas, demonstrating your brainstorming).
 
     3.  "wikipedia_queries":
-        A JSON array of 4 to 8 distinct and effective Wikipedia page search query strings. These queries should be
+        A JSON array of 4 to 8 distinct and effective Wikipedia page searchbar entry query strings. These queries should be
         derived from your 'scratchpad_query_brainstorm' and specifically designed to find Wikipedia pages offering factual
         context, detailed explanations, historical data, or other relevant information for understanding the 'driver's'
         influence on the scenario outlined by the 'question' and 'background_info'.
         - Queries should be specific enough to yield targeted results yet broad enough to capture comprehensive
-          encyclopedic articles if they exist. They should not include specific dates, time frames, years, or quarters, focusing 
-          instead on the nature of the information needed with respect to the question.
+          encyclopedic articles if they exist. They should not include specific dates, time frames, years, quarters, or hyperlinks,
+          focusing instead on the nature of the specific information needed with respect to the question.
 
     Important Guidelines:
 
@@ -161,35 +162,45 @@ wiki_pre_select_pages:
       answering specific questions. Your primary function is to support a forecasting bot by rapidly assessing Wikipedia 
       page summaries to determine if the full page likely contains valuable information for a given question. You excel at 
       identifying promising leads from brief descriptions and filtering out pages unlikely to yield pertinent details based 
-      on their summaries.
+      on their summaries{{ think }}.
     user_template: >
-      Carefully analyze the provided 'page_summary' from a Wikipedia article in relation to the 'question' and its 'drivers'. 
-      Your task is to decide whether the full article (based on this summary) is likely to contain substantial information that 
-      would be useful for answering the question or providing significant context for it.
+      Carefully analyze the provided 'page_summary' from a Wikipedia article in relation to the 'question' and its 'drivers' and 'queries'. 
+      Your task is to decide whether the full article (based on this summary) is likely to contain information that 
+      would be useful for answering the question or providing context for better understanding it and recent and historical precedent 
+      to develop baserates.
 
       Return your findings as a valid JSON object with the following exact fields:
+      - "background": (1-2 sentences) demonstrating your understanding of the 'question', 'drivers', and 'queries' 
+          based on the 'page_summary'. This should capture the essence of how the summary relates to the question and its 
+          context.
+
+      - "page_summary": (1-2 sentences) A concise summary of the 'page_summary' provided, focusing on the key points that are 
+          relevant to the 'question', 'drivers', and 'queries'. This should be a brief synthesis of the main ideas presented in the summary, 
+          highlighting any specific concepts, events, or entities mentioned that are related to the question.  If the topic is not related, do not 
+          make up key points; simply summarize the summary as it is and explain that it is not related to the question.
 
       - "reason": A concise chain of thought (1-2 sentences) reasoning about your 'decision'.
           - State what aspects of the 'page_summary' indicate a high potential for the full article to be relevant 
-          (e.g., "Summary mentions [specific concept/event/person] directly related to the question's focus on X."),
-          or why the full article is deemed not worth exploring further based on its summary (e.g., "Summary suggests 
-          the page focuses on [different topic/era] rather than the question's core.", "Summary is too broad and lacks 
-          specific details pertinent to the question.", "The connection to the question and drivers appears superficial or tangential 
-          based on the summary.").
+          to the 'question', 'drivers', and 'queries'. (e.g., "Summary mentions [specific concept/event/person/historical record] 
+          related to the question's focus on X."), or why the full article is deemed not worth exploring 
+          further based on its summary (e.g., "Summary suggests the page focuses on [different topic/era] not connected 
+          to the question").
 
-      - "decision": A string, either "yes" or "no".
-          - "yes": Assign if the 'page_summary' suggests the full article is likely to contain specific, relevant information 
-          crucial for answering or deeply contextualizing the 'question' and its 'drivers'.
-          - "no": Assign if the 'page_summary' suggests the full article is unlikely to contain significant relevant 
-          information, is too general, off-topic, or its relevance appears only tangential or minor.
+      - "decision": A string, either "yes", "maybe", or "no".
+          - "yes": Assign if the 'page_summary' suggests the full article is likely to contain relevant information 
+          crucial for answering or contextualizing the 'question', 'drivers', and 'queries', provide historical precedent,
+          and/or inform baserates.
+          - "maybe": Assign if the 'page_summary' indicates some potential relevance, but it is not clear enough to confidently assign "yes".
+          - "no": Assign if the 'page_summary' suggests the full article is unlikely to contain any relevant 
+          information or historical precedent, or is off-topic with respect to the 'question', 'drivers', and 'queries'.
+
+      - "score": A numerical score from 1 to 10, reflecting the likelihood that the full article will contain useful information.
 
       Important Considerations:
 
-      - Base your 'decision' and 'reason' SOLELY on the provided 'page_summary', 'question', and 'drivers'. Do NOT use external 
+      - Base your 'decision' and 'reason' SOLELY on the provided 'page_summary', 'question', 'drivers', and 'queries'. Do NOT use external 
       knowledge or make assumptions about the full article's content beyond what the 'page_summary' reasonably implies.
       - The primary goal is to efficiently filter for pages that are strong candidates for providing valuable information.
-      - Prioritize pages where the 'page_summary' clearly indicates a strong likelihood of containing specific, substantial 
-      information directly addressing the 'question', 'drivers', or essential context.
 
 
       <page_summary> {{ page_summary }} </page_summary>
@@ -197,13 +208,15 @@ wiki_pre_select_pages:
       <question> {{ question }} </question>
 
       <drivers> {{ drivers }} </drivers>
+      
+      <queries> {{ queries }} </queries>
 
 wiki_pre_extract_score:
     system_message: >
       You are a highly specialized AI assistant with expertise in pinpointing question-specific information within textual documents. 
       Your primary function is to support a forecasting bot by meticulously extracting and evaluating the relevance of content 
       from Wikipedia article sections relative to a given question and its drivers. You excel at identifying factual data, 
-      key statements, and contextual details while disregarding irrelevant or overly general information.
+      key statements, and contextual details while disregarding irrelevant or overly general information{{ think }}.
     user_template: >
       Carefully analyze the provided 'article' section from Wikipedia in relation to the 'question' and its 'drivers'. Your goal is 
       to extract the most pertinent information that directly helps answer the question or provides essential context for 

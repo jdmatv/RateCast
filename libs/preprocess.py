@@ -13,13 +13,14 @@ def decompose_drivers(question_metadata: dict) -> list[str]:
         prompt_name="pre_gen_decompose_drivers",
         question=question_metadata.get("question", ""),
         background=question_metadata.get("description", ""),
-        resolution_criteria=question_metadata.get("resolution_criteria", "")
+        resolution_criteria=question_metadata.get("resolution_criteria", ""),
+        think="/no_think"
     )
 
     service = CompletionsService()
     response = service.get_completion(
         messages=messages,
-        model_name="qwen3:4b"
+        model_name="qwen3:0.6b"
     )
 
     class DecomposedDriversResponse(BaseModel):
@@ -42,13 +43,14 @@ def question_to_queries(question_metadata: dict) -> list[str]:
         prompt_name="pre_question_to_queries",
         question=question_metadata.get("question", ""),
         background=question_metadata.get("description", ""),
-        resolution_criteria=question_metadata.get("resolution_criteria", "")
+        resolution_criteria=question_metadata.get("resolution_criteria", ""),
+        think="/no_think"
     )
 
     service = CompletionsService()
     response = service.get_completion(
         messages=messages,
-        model_name="qwen3:4b",
+        model_name="qwen3:0.6b",
     )
 
     class QueriesResponse(BaseModel):
@@ -75,13 +77,14 @@ def drivers_to_queries(
         question=question_metadata.get("question", ""),
         background=question_metadata.get("description", ""),
         resolution_criteria=question_metadata.get("resolution_criteria", ""),
-        drivers=drivers
+        drivers=drivers,
+        think="/no_think"
     )
 
     service = CompletionsService()
     response = service.get_completion(
         messages=messages,
-        model_name="qwen3:4b"
+        model_name="qwen3:1.7b"
     )
 
     class DriversQueriesResponse(BaseModel):
@@ -118,7 +121,8 @@ def get_all_wiki_queries(
 def wiki_summary_relevance(
     question_metadata: dict,
     wiki_summary: str,
-    drivers: list[str]
+    drivers: list[str],
+    queries: list[str]
 ) -> float:
     """
     Calculate the relevance of a Wikipedia summary to the question metadata.
@@ -128,7 +132,9 @@ def wiki_summary_relevance(
         prompt_name="wiki_pre_select_pages",
         page_summary=wiki_summary,
         question=question_metadata.get("question", ""),
-        drivers=drivers
+        drivers=", ".join(drivers),
+        queries=", ".join(queries),
+        think="/no_think"
     )
 
     service = CompletionsService()
@@ -138,12 +144,15 @@ def wiki_summary_relevance(
     )
 
     class RelevanceResponse(BaseModel):
+        background: str
+        page_summary: str
         reason: str
         decision: str
+        score: int
 
     relevance = RelevanceResponse.model_validate_json(response).decision
-    
-    if "yes" in relevance.lower():
+    print(f"Relevance decision: {relevance}")
+    if any(answer in relevance.lower() for answer in ["yes", "maybe"]):
         return True
     else:
         return False
@@ -167,8 +176,14 @@ def search_wiki_rank(
     # get summaries for the results
     result_summaries = [get_wiki_summary(title) for title in results]
 
+    print('\n'.join([
+        f"Results: {results}\n"
+        f"Summaries: {result_summaries}\n"
+        for results, result_summaries in zip(results, result_summaries)
+    ]))
+
     relevant_results = [result for result, summary in zip(results, result_summaries)\
-                         if wiki_summary_relevance(question_metadata, summary, drivers)]
+                         if wiki_summary_relevance(question_metadata, summary, drivers, queries)]
 
     return relevant_results
     

@@ -263,7 +263,9 @@ class CompletionsService:
             model_name = model_name.split('ollama/')[-1]
             response = ollama.chat(model=model_name, messages=messages)
             completion_content = response['message']['content']
-            clean_output = completion_content.split('</think>')[-1].strip()
+            clean_output = '{'+completion_content.split('</think>')[-1].strip().\
+                split('{')[-1].split('```')[0].strip()
+            print(clean_output)
             return clean_output
         except Exception as e:
             print(f"Error in get_ollama_completion: {e}")

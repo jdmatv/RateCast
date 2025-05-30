@@ -54,3 +54,15 @@ def get_wiki_full_text(title: str) -> str:
     
     return page.text
 
+def get_wiki_links(title: str) -> list[str]:
+    """
+    Get all links from a Wikipedia page by its title.
+    """
+    
+    page = wiki_wiki.page(title)
+    
+    if not page.exists():
+        raise ValueError(f"Page '{title}' does not exist on Wikipedia.")
+    
+    return list(page.links.keys())
+
