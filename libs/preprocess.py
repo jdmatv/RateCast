@@ -1,4 +1,5 @@
 from libs.service import CompletionsService
+from prompts.utils import validate_json_with_retry
 from config import prompt_manager
 from pydantic import BaseModel, ValidationError
 from apis.wikipedia import search_wiki, get_wiki_summary
@@ -29,7 +30,7 @@ def decompose_drivers(question_metadata: dict) -> list[str]:
         drivers_list: list[str]
 
     try:
-        return DecomposedDriversResponse.model_validate_json(response).drivers_list
+        return validate_json_with_retry(response, DecomposedDriversResponse).drivers_list
     except ValidationError as e:
         print(f"Validation error: {e}")
         return eval(response).get("drivers_list", [])
@@ -59,7 +60,7 @@ def question_to_queries(question_metadata: dict) -> list[str]:
         wikipedia_queries: list[str]
 
     try:
-        return QueriesResponse.model_validate_json(response).wikipedia_queries
+        return validate_json_with_retry(response, QueriesResponse).wikipedia_queries
     except ValidationError as e:
         print(f"Validation error: {e}")
         return eval(response).get("wikipedia_queries", [])
@@ -93,7 +94,7 @@ def drivers_to_queries(
         wikipedia_queries: list[str]
 
     try:
-        return DriversQueriesResponse.model_validate_json(response).wikipedia_queries
+        return validate_json_with_retry(response, DriversQueriesResponse).wikipedia_queries
     except ValidationError as e:
         print(f"Validation error: {e}")
         return eval(response).get("wikipedia_queries", [])
@@ -122,7 +123,9 @@ def wiki_summary_relevance(
     question_metadata: dict,
     wiki_summary: str,
     drivers: list[str],
-    queries: list[str]
+    queries: list[str],
+    model: str="qwen3:1.7b",
+    out_type: str="binary"
 ) -> float:
     """
     Calculate the relevance of a Wikipedia summary to the question metadata.
@@ -140,7 +143,7 @@ def wiki_summary_relevance(
     service = CompletionsService()
     response = service.get_completion(
         messages=messages,
-        model_name="qwen3:1.7b"
+        model_name=model
     )
 
     class RelevanceResponse(BaseModel):
@@ -150,18 +153,25 @@ def wiki_summary_relevance(
         decision: str
         score: int
 
-    relevance = RelevanceResponse.model_validate_json(response).decision
-    print(f"Relevance decision: {relevance}")
-    if any(answer in relevance.lower() for answer in ["yes", "maybe"]):
-        return True
-    else:
-        return False
+    if out_type == "binary":
+        relevance = validate_json_with_retry(response, RelevanceResponse).decision
+        if any(answer in relevance.lower() for answer in ["yes", "maybe"]):
+            return True
+        else:
+            return False
+    elif out_type == "discrete":
+        return validate_json_with_retry(response, RelevanceResponse).score
+
+# write function to take list of wikipedia pages and return promsising ones batch and random them
 
 def search_wiki_rank(
     queries: list[str],
     drivers: list[str],
     question_metadata: dict,
-    max_results: int = 3
+    max_results: int = 3,
+    max_total_pages: int = 5,
+    good_model: str = "qwen3:4b",
+    bad_model: str = "qwen3:1.7b"
 ) -> list[str]:
     """
     Search Wikipedia for the given queries and return the top results.
@@ -176,15 +186,17 @@ def search_wiki_rank(
     # get summaries for the results
     result_summaries = [get_wiki_summary(title) for title in results]
 
-    print('\n'.join([
-        f"Results: {results}\n"
-        f"Summaries: {result_summaries}\n"
-        for results, result_summaries in zip(results, result_summaries)
-    ]))
+    relevant_results = [result for result, summary in zip(results, result_summaries) if\
+                         wiki_summary_relevance(question_metadata, summary, drivers, queries, bad_model, "discrete")>=2]
+    
+    # relevant summaries
+    if len(relevant_results) > max_total_pages:
+        print(f"Identified {len(relevant_results)} prelimnary results: {'; '.join(relevant_results)}")
+        relevant_summaries = [summary for summary, result in zip(result_summaries, results) if result in relevant_results]
 
-    relevant_results = [result for result, summary in zip(results, result_summaries)\
-                         if wiki_summary_relevance(question_metadata, summary, drivers, queries)]
-
+        relevant_results = [result for result, summary in zip(relevant_results, relevant_summaries) if\
+                            wiki_summary_relevance(question_metadata, summary, drivers, queries, good_model, "discrete")>=5]
+        
     return relevant_results
     
     

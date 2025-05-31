@@ -88,7 +88,7 @@ pre_question_to_queries:
     'resolution_criteria'. Focus on the 'question' primarily.
     - The 'scratchpad_query_brainstorm' section should reflect a genuine brainstorming process that logically informs your final
       selection in 'wikipedia_queries'.
-    - The 'wikipedia_queries' should be actionable and optimized for Wikipedia's search engine and content structure.
+    - The 'wikipedia_queries' should be actionable and optimized for Wikipedia's searchbar (in prose) and content structure.
     - Do not use external knowledge beyond what is provided in the inputs. Focus solely on generating queries based on the given context.
 
 
@@ -144,7 +144,7 @@ pre_drivers_to_queries:
     and 'resolution_criteria'. Focus on the 'driver' primarily.
     - The 'scratchpad_query_brainstorm' section should reflect a genuine brainstorming process that logically informs your final
       selection in 'wikipedia_queries'.
-    - The 'wikipedia_queries' should be actionable and optimized for Wikipedia's search engine and content structure.
+    - The 'wikipedia_queries' should be actionable and optimized for Wikipedia's searchbar (in prose) and content structure.
     - Do not use external knowledge beyond what is provided in the inputs. Focus solely on generating queries based on the given context.
 
 

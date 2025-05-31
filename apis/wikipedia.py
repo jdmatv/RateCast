@@ -66,3 +66,10 @@ def get_wiki_links(title: str) -> list[str]:
     
     return list(page.links.keys())
 
+def get_wiki_full_text_batched(title: str) -> list[str]:
+    try:
+        page_text = get_wiki_full_text(title)
+        return page_text.split("\n")
+    except ValueError:
+        return []
+
