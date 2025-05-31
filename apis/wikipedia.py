@@ -27,7 +27,8 @@ def search_wiki(query: str, max_results: int = 5) -> list[str]:
 
 wiki_wiki = wikipediaapi.Wikipedia(
     user_agent = f'RateCast ({os.getenv("EMAIL_ADDRESS", "")})',
-    language = 'en'
+    language = 'en',
+    extract_format=wikipediaapi.ExtractFormat.HTML
 )
 
 def get_wiki_summary(title: str) -> str:
@@ -44,15 +45,35 @@ def get_wiki_summary(title: str) -> str:
 
 def get_wiki_full_text(title: str) -> str:
     """
-    Get the full text of a Wikipedia page by its title.
+    Fetches full rendered HTML (including tables) from a Wikipedia article using the MediaWiki API.
+    
+    Args:
+        title (str): Wikipedia article title (e.g., "List of countries by GDP (nominal)")
+    
+    Returns:
+        str: Full article as HTML (includes tables and all formatting)
     """
-    
-    page = wiki_wiki.page(title)
-    
-    if not page.exists():
-        raise ValueError(f"Page '{title}' does not exist on Wikipedia.")
-    
-    return page.text
+    headers = {
+        'User-Agent': f'RateCast ({os.getenv("EMAIL_ADDRESS", "")})'
+    }
+
+    # Step 1: Get page ID from title
+    base_url = 'https://en.wikipedia.org/w/api.php'
+    page_params = {
+        'action': 'parse',
+        'page': title,
+        'format': 'json',
+        'prop': 'text'
+    }
+
+    response = requests.get(base_url, params=page_params, headers=headers)
+    data = response.json()
+
+    if 'error' in data:
+        return f"Error fetching page: {data['error']}"
+
+    html_content = data['parse']['text']['*']
+    return html_content
 
 def get_wiki_links(title: str) -> list[str]:
     """
