@@ -2,6 +2,7 @@ import wikipediaapi
 import os
 import requests
 from bs4 import BeautifulSoup
+from apis.utils import wiki_split_html
 
 def search_wiki(query: str, max_results: int = 5) -> list[str]:
     """
@@ -46,12 +47,6 @@ def get_wiki_summary(title: str) -> str:
 def get_wiki_full_text(title: str) -> str:
     """
     Fetches full rendered HTML (including tables) from a Wikipedia article using the MediaWiki API.
-    
-    Args:
-        title (str): Wikipedia article title (e.g., "List of countries by GDP (nominal)")
-    
-    Returns:
-        str: Full article as HTML (includes tables and all formatting)
     """
     headers = {
         'User-Agent': f'RateCast ({os.getenv("EMAIL_ADDRESS", "")})'
@@ -90,7 +85,8 @@ def get_wiki_links(title: str) -> list[str]:
 def get_wiki_full_text_batched(title: str) -> list[str]:
     try:
         page_text = get_wiki_full_text(title)
-        return page_text.split("\n\n")
+        batched_text = [batch.get('extracted_text') for batch in wiki_split_html(page_text)]
+        return batched_text
     except ValueError:
         return []
 

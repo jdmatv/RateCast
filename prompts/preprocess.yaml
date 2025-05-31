@@ -246,19 +246,20 @@ wiki_pre_extract_score:
 
     - "extraction_reasoning": A brief explanation (1–3 sentences) of what makes the selected content relevant or not, and how you determined what to extract.
 
-    - "extracted_gold": (0–10 sentences) A distilled version of the **most relevant** content from the article_paragraph, based solely on what's in the text. Be specific and incldue key details.
+    - "extracted_gold": (0–10 sentences, text string) A distilled version of the most relevant content from the article_paragraph, based solely on what's in the text.
+    Be specific and include key details. Write in prose.
 
-      - If the score is 1, return an empty string.
+      - If the score is 1-2, return an empty string.
 
-      - If score is 2–5: Return 2-5 factual sentences from the text.
+      - If score is 3–5: Return 1-3 factual sentences from the text.
 
-      - If score is 6–10: Return 5–10 factual sentences from the text.
+      - If score is 6–10: Return 5–8 factual sentences from the text.
 
-      - Do **not** add prefaces like “this is relevant to the question…” Just output the clearest, most concise nuggets of useful information. Do not reference the drivers.
+      - Do not add prefaces like “this is relevant to the question…” Just output the clearest, most concise nuggets of useful information. Do not reference the drivers.
 
     Important:
 
-    - Use only the 'article_paragraph'. Do NOT incorporate external facts or speculate. Be specific.
+    - Use only the 'article_paragraph'. Do NOT incorporate external facts or speculate. Be specific. Write in prose.
 
 
     <article_paragraph> {{ article }} </article_paragraph>
@@ -276,9 +277,9 @@ wiki_pre_remove_irrelevant_info:
 
     Return a valid JSON object with these exact fields:
 
-    - "reasoning": A chain of thought (2-10 sentences) of what is relevant or what is not, and how you determined what to remove.
+    - "reasoning": A chain of thought (15-20 sentences) of what is relevant or what is not, and how you determined what to remove.
 
-    - "filtered_gold": The original'extracted_gold' text string with all irrelevant information removed from the string.
+    - "filtered_gold": The original 'extracted_gold' text string with all irrelevant information removed from the string.
 
     Important:
 
@@ -304,7 +305,7 @@ wiki_pre_consolidate_summaries:
 
     Return a valid JSON object with these exact fields:
 
-    - "reasoning": A chain of thought (2-10 sentences) explaining how you synthesized the information from the provided 'wiki_summaries' dictionary.
+    - "reasoning": A chain of thought (15-20 sentences) explaining how you synthesized the information from the provided 'wiki_summaries' dictionary.
 
       - Discuss how you identified key themes, concepts, and connections across the summaries.
 
@@ -314,13 +315,13 @@ wiki_pre_consolidate_summaries:
 
       - Think through the order of the information you present.
 
-    - "consolidated_summary": A well-structured summary (8-25 sentences) that integrates the key points from all provided 'wiki_sumamries' dictionary.
+    - "consolidated_summary": A well-structured summary (14-18 sentences, text string) that integrates the key points from the provided 'wik_summaries' dictionary.
 
       - Focus on clarity and coherence, ensuring that the summary flows logically and captures the essence of the information.
 
       - Do not include any prefaces or introductory phrases; just present the consolidated content directly. Avoid verbosity. No intro or conclusion sentences.
 
-      - Be specific and include details such as facts, dates, and numbers that are relevant.
+      - Be specific and include details such as facts, dates, and numbers that are relevant. write in prose.
 
     Important:
 
@@ -328,6 +329,7 @@ wiki_pre_consolidate_summaries:
 
     - Ensure that the summary is comprehensive yet concise, avoiding unnecessary repetition or filler content. Avoid transition phrases. Exclude vague information.
 
+    - Write in prose. Do not directly reference the summaries, the question, or the drivers in the summary. Present the information clearly and directly.
 
     <wiki_summaries> {{ wiki_summaries }} </wiki_summaries>
 

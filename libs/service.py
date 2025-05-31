@@ -265,18 +265,18 @@ class CompletionsService:
             completion_content = response['message']['content']
             clean_output = '{'+completion_content.split('</think>')[-1].strip().\
                 split('{')[-1].split('```')[0].strip()
-            print(clean_output)
+            #print(clean_output)
             return clean_output
         except Exception as e:
             print(f"Error in get_ollama_completion: {e}")
             self._update_balances_and_log(model_name, "Ollama_Error", 0, 0)
 
     def get_completion(
-            self, 
-            model_name: str, 
-            messages: list[dict], 
-            temperature: Optional[float]=None, 
-            max_tokens: Optional[int]=None
+        self, 
+        model_name: str, 
+        messages: list[dict], 
+        temperature: Optional[float]=None, 
+        max_tokens: int=100000
     ) -> str:
         """
         Generic method to get completion. Determines provider based on model name.
