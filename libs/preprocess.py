@@ -1,11 +1,12 @@
 from libs.service import CompletionsService
 from prompts.utils import validate_json_with_retry
-from config import prompt_manager
+from prompts.config import prompt_manager
 from pydantic import BaseModel, ValidationError
-from apis.wikipedia import search_wiki, get_wiki_summary
+from apis.wikipedia import search_wiki, get_wiki_summary, get_wiki_full_text_batched
 from typing import Union
 
-def decompose_drivers(question_metadata: dict) -> list[str]:
+# this should be a good model e.g. o4-mini thinking
+def decompose_drivers(question_metadata: dict, model="qwen3:14b") -> list[str]:
     """
     Decompose the question metadata into a list of drivers.
     """
@@ -21,7 +22,7 @@ def decompose_drivers(question_metadata: dict) -> list[str]:
     service = CompletionsService()
     response = service.get_completion(
         messages=messages,
-        model_name="qwen3:0.6b"
+        model_name=model
     )
 
     class DecomposedDriversResponse(BaseModel):
@@ -34,8 +35,9 @@ def decompose_drivers(question_metadata: dict) -> list[str]:
     except ValidationError as e:
         print(f"Validation error: {e}")
         return eval(response).get("drivers_list", [])
-    
-def question_to_queries(question_metadata: dict) -> list[str]:
+
+# this can be a bad model (e.g., 4o-mini)
+def question_to_queries(question_metadata: dict, model="qwen3:1.7b") -> list[str]:
     """
     Convert question metadata to a list of queries.
     """
@@ -51,7 +53,7 @@ def question_to_queries(question_metadata: dict) -> list[str]:
     service = CompletionsService()
     response = service.get_completion(
         messages=messages,
-        model_name="qwen3:0.6b",
+        model_name=model
     )
 
     class QueriesResponse(BaseModel):
@@ -64,10 +66,12 @@ def question_to_queries(question_metadata: dict) -> list[str]:
     except ValidationError as e:
         print(f"Validation error: {e}")
         return eval(response).get("wikipedia_queries", [])
-    
+
+# this can be a bad model (e.g. 4o-mini)  
 def drivers_to_queries(
     question_metadata: dict, 
-    drivers: list[str]
+    drivers: list[str],
+    model="qwen3:1.7b"
 ) -> list[str]:
     """
     Convert drivers to a list of queries.
@@ -78,14 +82,14 @@ def drivers_to_queries(
         question=question_metadata.get("question", ""),
         background=question_metadata.get("description", ""),
         resolution_criteria=question_metadata.get("resolution_criteria", ""),
-        drivers=drivers,
+        drivers=", ".join(drivers),
         think="/no_think"
     )
 
     service = CompletionsService()
     response = service.get_completion(
         messages=messages,
-        model_name="qwen3:1.7b"
+        model_name=model
     )
 
     class DriversQueriesResponse(BaseModel):
@@ -101,7 +105,7 @@ def drivers_to_queries(
 
 def get_all_wiki_queries(
     question_metadata: dict
-) -> list[str]:
+) -> tuple[list[str], list[str]]:
     """
     Get all Wikipedia queries for a question.
     """
@@ -119,6 +123,7 @@ def get_all_wiki_queries(
     
     return list(all_queries), drivers
 
+# this should be a small fast model (maybe qwen series)
 def wiki_summary_relevance(
     question_metadata: dict,
     wiki_summary: str,
@@ -198,6 +203,156 @@ def search_wiki_rank(
                             wiki_summary_relevance(question_metadata, summary, drivers, queries, good_model, "discrete")>=5]
         
     return relevant_results
+
+def extract_wiki_sections(
+    page_name: str,
+    drivers: list[str],
+    bad_model="qwen3:1.7b",
+    good_model="qwen3:4b",
+    filter_cycles=1
+):
+    """
+    Extract relevant sections from a Wikipedia page based on the queries and drivers.
+    """
+
+    wiki_full_text = get_wiki_full_text_batched(page_name)
+    
+    extracted_summaries = []
+    for section in wiki_full_text:
+        messages = prompt_manager.render_prompt(
+            article=section,
+            prompt_name="wiki_pre_extract_score",
+            drivers=", ".join(drivers),
+            think="/think"
+        )
+
+        service = CompletionsService()
+        response = service.get_completion(
+            messages=messages,
+            model_name=bad_model
+        )
+
+        class SectionExtractionResponse(BaseModel):
+            paragraph_summary: str
+            score: int
+            extraction_reasoning: str
+            extracted_gold: str
+
+        try:
+            extracted_summaries.append(validate_json_with_retry(response, SectionExtractionResponse).extracted_gold)
+        except ValidationError as e:
+            print(f"Validation error: {e}")
+            extracted_summaries.append(eval(response).get("extracted_info", []))
+    
+    full_extraction = " ".join([i.strip() for i in extracted_summaries if i.strip()!=""])
+    
+    for _ in range(filter_cycles):
+        full_extraction = filter_wikipedia_output(good_model, drivers, full_extraction)
+    
+    return {"page_name": page_name, "page_summary": full_extraction.strip()}
+
+def filter_wikipedia_output(
+    model: str,
+    drivers: list[str],
+    extraction: str
+) -> str:
+    
+    if extraction.strip() == "":
+        return extraction. strip()
+    
+    messages = prompt_manager.render_prompt(
+        prompt_name="wiki_pre_remove_irrelevant_info",
+        extracted_gold=extraction,
+        drivers=", ".join(drivers),
+        think="/no_think"
+    )
+
+    service = CompletionsService()
+    response = service.get_completion(
+        messages=messages,
+        model_name=model
+    )
+
+    class FinalExtractionResponse(BaseModel):
+        reasoning: str
+        filtered_gold: str
+    try:
+        extraction = validate_json_with_retry(response, FinalExtractionResponse).filtered_gold
+    except ValidationError as e:
+        print(f"Validation error: {e}")
+        extraction = eval(response).get("filtered_info", [])
+    
+    return extraction.strip()
+
+def draft_wiki_background(
+    question_metadata: dict,
+    drivers: list[str],
+    wiki_summaries: list[dict],
+    mode: str = "qwen3:8b"
+) -> str:
+    
+    messages = prompt_manager.render_prompt(
+        prompt_name="wiki_pre_consolidate_summaries",
+        question=question_metadata.get("question", ""),
+        drivers=", ".join(drivers),
+        wiki_summaries="\n".join([f"{summary['page_name']}: {summary['page_summary']}" for summary in wiki_summaries]),
+        think="/no_think"
+    )
+
+    service = CompletionsService()
+    response = service.get_completion(
+        messages=messages,
+        model_name=mode
+    )
+    class BackgroundResponse(BaseModel):
+        reasoning: str
+        consolidated_summary: str
+    
+    try:
+        background = validate_json_with_retry(response, BackgroundResponse).consolidated_summary
+    except ValidationError as e:
+        print(f"Validation error: {e}")
+        background = eval(response).get("consolidated_summary", "")
+    
+    return background.strip()
+
+def gen_background_pipeline1(
+    question_metadata: dict,
+) -> tuple[str, list[str], list[dict]]:
+    """
+    Generate a background for the question using Wikipedia.
+    """
+    
+    queries, drivers = get_all_wiki_queries(question_metadata)
+    print(f"Generated {len(queries)} queries and {len(drivers)} drivers for the question.")
+
+    relevant_pages = search_wiki_rank(
+        queries=queries,
+        drivers=drivers,
+        question_metadata=question_metadata
+    )
+
+    raw_summaries = [extract_wiki_sections(page, drivers) for page in relevant_pages]
+    print(f"Extracted summaries from {len(raw_summaries)} relevant pages.")
+
+    background = draft_wiki_background(
+        question_metadata=question_metadata,
+        drivers=drivers,
+        wiki_summaries=raw_summaries
+    )
+    print("Drafted background from the extracted summaries.")
+
+    return background, drivers, raw_summaries
+
+
+
+
+
+    
+
+
+    
+
     
     
 

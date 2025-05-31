@@ -69,7 +69,7 @@ def get_wiki_links(title: str) -> list[str]:
 def get_wiki_full_text_batched(title: str) -> list[str]:
     try:
         page_text = get_wiki_full_text(title)
-        return page_text.split("\n")
+        return page_text.split("\n\n")
     except ValueError:
         return []
 

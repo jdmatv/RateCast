@@ -35,8 +35,10 @@ pre_gen_decompose_drivers:
 
     - Ensure your entire analysis is grounded in the provided 'question', 'background', and 'resolution_criteria'.
     Focus on the 'question' itself.
+
     - The 'factor_consideration' should provide the reasoning and context that logically leads to the selection
       of items in the 'drivers_list'.
+
     - Strive for clarity and precision in your language. Do not use external knowledge beyond what is provided. Do not
     include dates or quarters in the drivers. Think of drivers as key indicators or factors. Be specific.
 
@@ -78,6 +80,7 @@ pre_question_to_queries:
         derived from your 'scratchpad_query_brainstorm' and specifically designed to find Wikipedia pages offering factual
         context, detailed explanations, historical data, or other relevant information for comprehensively
         understanding the likelihood of the scenario outlined by the 'question', 'background', and 'resolution_criteria'.
+
         - Queries should be specific enough to yield targeted results yet broad enough to capture comprehensive
           encyclopedic articles if they exist. They should not include specific dates, time frames, years, quarters, or hyperlinks,
           focusing instead on the nature of the specific information needed with respect to the question.
@@ -86,9 +89,12 @@ pre_question_to_queries:
 
     - All outputs must be directly derived from and be highly relevant to the provided 'question', 'background', and 
     'resolution_criteria'. Focus on the 'question' primarily.
+
     - The 'scratchpad_query_brainstorm' section should reflect a genuine brainstorming process that logically informs your final
       selection in 'wikipedia_queries'.
+
     - The 'wikipedia_queries' should be actionable and optimized for Wikipedia's searchbar (in prose) and content structure.
+
     - Do not use external knowledge beyond what is provided in the inputs. Focus solely on generating queries based on the given context.
 
 
@@ -134,6 +140,7 @@ pre_drivers_to_queries:
         derived from your 'scratchpad_query_brainstorm' and specifically designed to find Wikipedia pages offering factual
         context, detailed explanations, historical data, or other relevant information for understanding the 'driver's'
         influence on the scenario outlined by the 'question' and 'background_info'.
+
         - Queries should be specific enough to yield targeted results yet broad enough to capture comprehensive
           encyclopedic articles if they exist. They should not include specific dates, time frames, years, quarters, or hyperlinks,
           focusing instead on the nature of the specific information needed with respect to the question.
@@ -142,9 +149,12 @@ pre_drivers_to_queries:
 
     - All outputs must be directly derived from and be highly relevant to the provided 'driver', 'question', 'background',
     and 'resolution_criteria'. Focus on the 'driver' primarily.
+
     - The 'scratchpad_query_brainstorm' section should reflect a genuine brainstorming process that logically informs your final
       selection in 'wikipedia_queries'.
+
     - The 'wikipedia_queries' should be actionable and optimized for Wikipedia's searchbar (in prose) and content structure.
+
     - Do not use external knowledge beyond what is provided in the inputs. Focus solely on generating queries based on the given context.
 
 
@@ -170,9 +180,8 @@ wiki_pre_select_pages:
       to develop baserates.
 
       Return your findings as a valid JSON object with the following exact fields:
-      - "background": (1-2 sentences) demonstrating your understanding of the 'question', 'drivers', and 'queries' 
-          based on the 'page_summary'. This should capture the essence of how the summary relates to the question and its 
-          context.
+
+      - "background": (1-2 sentences) demonstrating your understanding of the 'question', 'drivers', and 'queries'.
 
       - "page_summary": (1-2 sentences) A concise summary of the 'page_summary' provided, focusing on the key points that are 
           relevant to the 'question', 'drivers', and 'queries'. This should be a brief synthesis of the main ideas presented in the summary, 
@@ -212,54 +221,112 @@ wiki_pre_select_pages:
       <queries> {{ queries }} </queries>
 
 wiki_pre_extract_score:
-    system_message: >
-      You are a highly specialized AI assistant with expertise in pinpointing question-specific information within textual documents. 
-      Your primary function is to support a forecasting bot by meticulously extracting and evaluating the relevance of content 
-      from Wikipedia article sections relative to a given question and its drivers. You excel at identifying factual data, 
-      key statements, and contextual details while disregarding irrelevant or overly general information{{ think }}.
-    user_template: >
-      Carefully analyze the provided 'article' section from Wikipedia in relation to the 'question' and its 'drivers'. Your goal is 
-      to extract the most pertinent information that directly helps answer the question or provides essential context for 
-      understanding it.
+  system_message: >
+    You are a specialized AI assistant with expertise in synthesizing factual, objective information from textual documents.
+    Your primary function is to support a forecasting system by identifying and distilling the most relevant content from a given Wikipedia article paragraph.
+    You focus on factual details.{{ think }}
 
-      Return your findings as a valid JSON object with the following exact fields:
+  user_template: >
+    Carefully analyze the provided 'article_paragraph' from Wikipedia in light of the 'drivers'.
+    Your goal is to identify and extract the **most relevant factual content** in the article paragraph. Focus only on what is **explicitly stated**, not inferred.
+    Eliminate any prefacing or interpretive language; the final output should feel like it was copied straight from a high-quality, objective encyclopedia. Be 
+    specific and include names, dates, and numbers that are relevant.
 
-      - "background": (3-4 sentences) demonstrating your understanding of question, drivers, and the article section.
+    Return a valid JSON object with these exact fields:
 
-      - "relevant_info": A concise and focused string containing the most relevant information extracted from the 'article' 
-      section. This should ideally be key facts, figures, direct quotes, or a very brief synthesis of information that 
-      directly pertains to the 'question' and 'drivers'. Prioritize information that is explicit in the text. If multiple pieces of 
-      information are relevant, synthesize them concisely.
+    - "paragraph_summary": (1–4 sentences) A concise summary of the paragraph's main points. Be specific and include details. If the topic is unrelated to the drivers, simply summarize the paragraph with no reference to relevance.
 
-      - "reasoning": A concise chain of though (1-2 sentences) about the level of relevance of the extracted info for answering
-      the 'question' and 'drivers'.
+    - "score": A numerical value from 1 to 10 indicating how relevant the paragraph is for understanding or addressing the 'drivers'.
+        - 1: Completely unrelated.
+        - 2–3: Tangential or minimally relevant.
+        - 4–5: Somewhat relevant but not central.
+        - 6–7: Moderately relevant; adds useful background or context.
+        - 8–9: Highly relevant; directly informs or supports understanding.
+        - 10: Critically relevant; central to the drivers.
 
-      - "score": A numerical score from 1 to 10, reflecting how relevant the extracted info from the provided 'article' section 
-      is for answering the 'question' and 'drivers'. Use the following guidelines for scoring:
-          - 1: The section contains no information relevant to the question and drivers whatsoever.
-          - 2-3: The section has a very slight, tangential, or superficial connection to the question and drivers; offers little to 
-          no useful context.
-          - 4-5: The section contains some relevant information, but it's not central, might be background, or only partially 
-          addresses a minor aspect of the question and drivers.
-          - 6-7: The section contains moderately to significantly relevant information, providing useful context or 
-          addressing a notable part of the question and drivers.
-          - 8-9: The section contains highly relevant information that directly and substantially contributes to 
-          answering the question and drivers or understanding key facets of it.
-          - 10: The section contains critically relevant information that is almost a direct answer or provides 
-          indispensable context crucial for addressing the question and drivers.
+    - "extraction_reasoning": A brief explanation (1–3 sentences) of what makes the selected content relevant or not, and how you determined what to extract.
 
-      Important Considerations:
-      
-      - If the 'article' section contains NO relevant information for the 'question' and 'drivers', "relevant_info" MUST be an 
-      empty string ("") and the "score" MUST be 1.
-      - Extract information ONLY from the provided 'article' section. Do NOT use external knowledge or information 
-      from other parts of Wikipedia not included in the input.
-      - Do NOT infer information or make assumptions beyond what is explicitly stated in the text.
-      - The "relevant_info" should be as concise as possible while retaining the essential information. Avoid verbosity.
+    - "extracted_gold": (1–4 sentences) A distilled version of the **most relevant** content from the article_paragraph, based solely on what's in the text. Be specific and incldue key details.
+
+      - If the score is 1, return an empty string.
+
+      - If score is 2–5: Return 1–2 factual sentences from the text.
+
+      - If score is 6–10: Return 2–4 factual sentences from the text.
+
+      - Do **not** add prefaces like “this is relevant to the question…” Just output the clearest, most concise nuggets of useful information. Do not reference the drivers.
+
+    Important:
+
+    - Use only the 'article_paragraph'. Do NOT incorporate external facts or speculate. Be specific.
 
 
-      <article> {{ article }} </article>
+    <article_paragraph> {{ article }} </article_paragraph>
 
-      <question> {{ question }} </question>
+    <drivers> {{ drivers }} </drivers>
 
-      <drivers> {{ drivers }} </drivers>
+wiki_pre_remove_irrelevant_info:
+  system_message: >
+    You are a specialized AI assistant with expertise in filtering out irrelevant information from textual documents.
+    You focus on factual details and relevance.{{ think }}
+  user_template: >
+    Carefully review the provided 'extracted_gold' content in the context of the 'drivers'.
+    Your task is to identify and remove any information that does not pertain to the 'drivers' or provide context for better understanding
+    the topic with respect to the 'drivers'. Focus only on what is explicitly stated, not inferred.
+
+    Return a valid JSON object with these exact fields:
+
+    - "reasoning": A chain of thought (2-10 sentences) of what is relevant or what is not, and how you determined what to remove.
+
+    - "filtered_gold": The original'extracted_gold' text string with all irrelevant information removed from the string.
+
+    Important:
+
+    - Use only the 'extracted_gold' and 'drivers'. Do NOT incorporate external facts or speculate.
+
+    - Relevance is determined by whether the content contextualizes the 'drivers'. It doesn't need to be directly about the drivers, 
+    but it should provide useful background or context that helps understand the drivers better.
+
+    <extracted_gold> {{ extracted_gold }} </extracted_gold>
+
+    <drivers> {{ drivers }} </drivers>
+
+wiki_pre_consolidate_summaries:
+  system_message: >
+    You are a specialized AI assistant with expertise in synthesizing and consolidating information from multiple sources.
+    Your primary function is to support a forecasting system by merging relevant content from various Wikipedia article paragraphs
+    into a coherent summary that captures the essential details related to the 'drivers' and 'question'.{{ think }}
+  user_template: >
+    You have been provided a dictionary of summaries from various wikipedia pages, each containing relevant information about the 'drivers' and 'question'.
+    Your task is to consolidate these into a single, coherent summary that captures the most important points across all inputs and serves as rich, contextual background
+    for the 'question' and 'drivers'.
+
+    Return a valid JSON object with these exact fields:
+
+    - "reasoning": A chain of thought (2-10 sentences) explaining how you synthesized the information from the provided 'wiki_summaries' dictionary.
+
+      - Discuss how you identified key themes, concepts, and connections across the summaries.
+
+      - Explain your approach to ensuring clarity and coherence in the final summary.
+
+      - Be specific and include details. Include facts, dates, and numbers that are relevant to the drivers.
+
+    - "consolidated_summary": A well-structured summary (8-25 sentences) that integrates the key points from all provided 'wiki_sumamries' dictionary.
+
+      - Focus on clarity and coherence, ensuring that the summary flows logically and captures the essence of the information.
+
+      - Do not include any prefaces or introductory phrases; just present the consolidated content directly. Avoid verbosity.
+
+      - Be specific and include details such as facts, dates, and numbers that are relevant.
+
+    Important:
+
+    - Use only the provided 'wiki_summaries' dictionary. Do NOT incorporate external facts or speculate.
+
+    - Ensure that the summary is comprehensive yet concise, avoiding unnecessary repetition or filler content. Avoid transition phrases.
+
+    <wiki_summaries> {{ wiki_summaries }} </wiki_summaries>
+
+    <drivers> {{ drivers }} </drivers>
+
+    <question> {{ question }} </question>
