@@ -85,6 +85,10 @@ def gen_background_pipeline1(
         max_total_pages=max_total_pages,
     )
 
+    if len(relevant_pages) == 0:
+        print(f"\nNo relevant wikipedia pages identified.\n")
+        return "", drivers, []
+
     print(f"\nFirst Reading List: \n --{'\n --'.join(relevant_pages)}\n")
 
     raw_summaries = [
@@ -111,6 +115,9 @@ def gen_background_pipeline2(
     max_batches: Optional[int] = None,
 ) -> tuple[str, list[str], list[dict]]:
     
+    if len(wiki_summaries) == 0:
+        return background, drivers, full_summaries
+    
     new_links = review_wiki_pages(
         wiki_summaries=wiki_summaries,
         question_metadata=question_metadata,
@@ -135,7 +142,7 @@ def gen_background_pipeline2(
             for page in tqdm(relevant_pages, desc="Reading Wikipedia Pages")
         ]
 
-        full_summaries = raw_summaries + wiki_summaries
+        full_summaries = wiki_summaries + raw_summaries
 
         background = draft_wiki_background(
             question_metadata=question_metadata,

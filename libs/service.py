@@ -5,6 +5,7 @@ import ollama
 from datetime import datetime
 import requests
 from typing import Optional
+from openai import OpenAI
 
 
 LOGS_DIR = "logs"
@@ -277,9 +278,11 @@ class CompletionsService:
         """
         Get completion from OpenRouter model.
         """
-        headers = {
-            "Authorization": f"Bearer {self.openrouter_token}"
-        }
+        client = OpenAI(
+            base_url = self.openrouter_base_url,
+            api_key = self.openrouter_token
+        )
+        
         payload = {
             "model": model_name,
             "messages": messages
@@ -290,15 +293,11 @@ class CompletionsService:
             payload["max_tokens"] = max_tokens
 
         try:
-            response_data = self._make_request(self.openrouter_base_url, headers, payload)
-            
-            completion_content = response_data.get("choices", [{}])[0].get("message", {}).get("content", "")
-            
-            return completion_content
+            completion = client.chat.completions.create(**payload)
+            return completion.choices[0].message.content
         except Exception as e:
-            print(f"Error in get_openai_completion: {e}")
+            print(f"Error in get_openrouter_completion: {e}")
             # Log a failed attempt if possible, though token counts might be unknown
-            self._update_balances_and_log(model_name, "OpenAI_Error", 0, 0) # Or some other way to denote failure
             raise
         
 
@@ -307,7 +306,7 @@ class CompletionsService:
         model_name: str, 
         messages: list[dict], 
         temperature: Optional[float]=None, 
-        max_tokens: int=100000
+        max_tokens: int=20000
     ) -> str:
         """
         Generic method to get completion. Determines provider based on model name.
@@ -316,7 +315,7 @@ class CompletionsService:
 
         if "claude" in full_model_name.lower():
             return self.get_anthropic_completion(full_model_name, messages, temperature, max_tokens)
-        elif any(keyword in full_model_name.lower() for keyword in ["gpt", "o3", "o4"]):
+        elif any(keyword in full_model_name.lower() for keyword in ["gpt", "o3", "o4"]): 
             return self.get_openai_completion(full_model_name, messages, temperature, max_tokens)
         elif "ollama" in full_model_name.lower():
             return self.get_ollama_completion(full_model_name, messages)
