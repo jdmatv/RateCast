@@ -44,7 +44,7 @@ def decompose_drivers(
 # this can be a bad model (e.g., 4o-mini)
 def question_to_queries(
     question_metadata: dict, 
-    model: str="qwen3:1.7b", 
+    model: str="qwen3:8b", 
     max_retries: int=3
 ) -> list[str]:
     """
@@ -80,7 +80,7 @@ def question_to_queries(
 def drivers_to_queries(
     question_metadata: dict, 
     drivers: list[str],
-    model: str="qwen3:1.7b",
+    model: str="qwen3:8b",
     max_retries: int=3
 ) -> list[str]:
     """
@@ -119,8 +119,7 @@ def wiki_summary_relevance(
     question_metadata: dict,
     wiki_summary: str,
     drivers: list[str],
-    queries: list[str],
-    model: str="qwen3:1.7b",
+    model: str="qwen3:8b",
     out_type: str="binary",
     max_retries: int=3
 ) -> float:
@@ -133,7 +132,6 @@ def wiki_summary_relevance(
         page_summary=wiki_summary,
         question=question_metadata.get("question", ""),
         drivers=", ".join(drivers),
-        queries=", ".join(queries),
         think="/no_think"
     )
 
@@ -166,7 +164,7 @@ def wiki_summary_relevance(
 def extract_wiki_sections(
     page_name: str,
     drivers: list[str],
-    bad_model: str="qwen3:4b",
+    bad_model: str="qwen3:8b",
     good_model: str="qwen3:8b",
     filter_cycles: int=1,
     max_retries: int=3,
@@ -285,16 +283,15 @@ def review_wiki_pages(
     question_metadata: dict,
     drivers: list[str],
     background: str,
-    model: str = "qwen3:1.7b",
+    model: str = "qwen3:8b",
     link_batch_size: int = 40,
     max_retries: int = 3,
     max_batches: Optional[int]=None
 ) -> list[str]:
     """
-    Review the Wikipedia pages and return a list of relevant pages.
+    Review list of Wikipedia pages and return a list of relevant pages.
     """
     existing_pages, all_links = batch_wiki_links(wiki_summaries, batch_size=link_batch_size)
-    print(all_links)
 
     if max_batches is not None:
         all_links = all_links[:max_batches]

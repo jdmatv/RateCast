@@ -1,7 +1,7 @@
 from libs.service import CompletionsService
 from pydantic import BaseModel, ValidationError
 from typing import Optional
-from apis.wikipedia import get_wiki_links
+from apis.wikipedia import get_wiki_links, search_wiki
 import random
 
 
@@ -52,10 +52,24 @@ def batch_wiki_links(wiki_summaries: list[dict], batch_size) -> tuple[list[str],
     all_links = [get_wiki_links(page) for page in existing_pages]
     all_links = list(set([link for sublist in all_links for link in sublist]) - set(existing_pages))
     
+    # double check no duplicates
+    all_links = [link for link in all_links if link.lower().strip() not in [i.lower().strip() for i in existing_pages]]
+
     # Shuffle the links to ensure randomness
     random.shuffle(all_links)
     
     # Create batches of links
     return existing_pages, [all_links[i:i + batch_size] for i in range(0, len(all_links), batch_size)]
+
+def search_wiki_queries(
+    queries: list[str],
+    max_results: int = 3
+) -> list[str]:
+    results = []
+    for query in queries:
+        search_results = search_wiki(query, max_results)
+        results.extend(search_results)
+
+    return list(set(results))
     
     

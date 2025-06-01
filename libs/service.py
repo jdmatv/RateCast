@@ -28,7 +28,7 @@ MODEL_NAME_DIC = {
     'qwen3:0.6b': 'ollama/qwen3:0.6b',
     'qwen3:1.7b': 'ollama/qwen3:1.7b',
     'qwen3:4b': 'ollama/qwen3:4b',
-    'qwen3:8b': 'ollama/qwen3:8b',
+    'qwen3:8b': 'qwen/qwen3-8b:free',
     'qwen3:14b': 'ollama/qwen3:14b',
     'llama3.2': 'ollama/llama3.2:latest'
 }
@@ -74,10 +74,12 @@ def map_api_model_to_balance_key(api_model_name, initial_balance_keys):
 class CompletionsService:
     def __init__(self):
         self.metuculus_token = os.getenv('METACULUS_TOKEN')
+        self.openrouter_token = os.getenv('OPENROUTER_TOKEN')
         self.initial_token_balances = INITIAL_TOKEN_BALANCES 
         self.current_token_balances = self._load_or_initialize_current_balances()
         self.openai_base_url = "https://llm-proxy.metaculus.com/proxy/openai/v1/chat/completions/"
         self.anthropic_base_url = "https://llm-proxy.metaculus.com/proxy/anthropic/v1/messages/"
+        self.openrouter_base_url = "https://openrouter.ai/api/v1"
         
         # Ensure logs directory exists
         if not os.path.exists(LOGS_DIR):
@@ -270,6 +272,35 @@ class CompletionsService:
         except Exception as e:
             print(f"Error in get_ollama_completion: {e}")
             self._update_balances_and_log(model_name, "Ollama_Error", 0, 0)
+    
+    def get_openrouter_completion(self, model_name, messages, temperature=None, max_tokens=None):
+        """
+        Get completion from OpenRouter model.
+        """
+        headers = {
+            "Authorization": f"Bearer {self.openrouter_token}"
+        }
+        payload = {
+            "model": model_name,
+            "messages": messages
+        }
+        if temperature is not None:
+            payload["temperature"] = temperature
+        if max_tokens is not None:
+            payload["max_tokens"] = max_tokens
+
+        try:
+            response_data = self._make_request(self.openrouter_base_url, headers, payload)
+            
+            completion_content = response_data.get("choices", [{}])[0].get("message", {}).get("content", "")
+            
+            return completion_content
+        except Exception as e:
+            print(f"Error in get_openai_completion: {e}")
+            # Log a failed attempt if possible, though token counts might be unknown
+            self._update_balances_and_log(model_name, "OpenAI_Error", 0, 0) # Or some other way to denote failure
+            raise
+        
 
     def get_completion(
         self, 
@@ -289,6 +320,8 @@ class CompletionsService:
             return self.get_openai_completion(full_model_name, messages, temperature, max_tokens)
         elif "ollama" in full_model_name.lower():
             return self.get_ollama_completion(full_model_name, messages)
+        elif "qwen/" in full_model_name.lower():
+            return self.get_openrouter_completion(full_model_name, messages, temperature, max_tokens)
         else:
             print(f"Warning: Provider for model '{full_model_name}' not explicitly determined. Defaulting to OpenAI.")
             return self.get_openai_completion(full_model_name, messages, temperature, max_tokens)

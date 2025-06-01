@@ -174,40 +174,40 @@ wiki_pre_select_pages:
       identifying promising leads from brief descriptions and filtering out pages unlikely to yield pertinent details based 
       on their summaries{{ think }}.
     user_template: >
-      Carefully analyze the provided 'page_summary' from a Wikipedia article in relation to the 'question' and its 'drivers' and 'queries'. 
+      Carefully analyze the provided 'page_summary' from a Wikipedia article in relation to the 'question' and its 'drivers'. 
       Your task is to decide whether the full article (based on this summary) is likely to contain information that 
       would be useful for answering the question or providing context for better understanding it and recent and historical precedent 
       to develop baserates.
 
       Return your findings as a valid JSON object with the following exact fields:
 
-      - "background": (1-2 sentences) demonstrating your understanding of the 'question', 'drivers', and 'queries'.
+      - "background": (1-2 sentences) demonstrating your understanding of the 'question' and 'drivers'.
 
       - "page_summary": (1-2 sentences) A concise summary of the 'page_summary' provided, focusing on the key points that are 
-          relevant to the 'question', 'drivers', and 'queries'. This should be a brief synthesis of the main ideas presented in the summary, 
+          relevant to the 'question' and 'drivers'. This should be a brief synthesis of the main ideas presented in the summary, 
           highlighting any specific concepts, events, or entities mentioned that are related to the question.  If the topic is not related, do not 
           make up key points; simply summarize the summary as it is and explain that it is not related to the question.
 
       - "reason": A concise chain of thought (1-2 sentences) reasoning about your 'decision'.
           - State what aspects of the 'page_summary' indicate a high potential for the full article to be relevant 
-          to the 'question', 'drivers', and 'queries'. (e.g., "Summary mentions [specific concept/event/person/historical record] 
+          to the 'question' and 'drivers',. (e.g., "Summary mentions [specific concept/event/person/historical record] 
           related to the question's focus on X."), or why the full article is deemed not worth exploring 
           further based on its summary (e.g., "Summary suggests the page focuses on [different topic/era] not connected 
           to the question").
 
       - "decision": A string, either "yes", "maybe", or "no".
           - "yes": Assign if the 'page_summary' suggests the full article is likely to contain relevant information 
-          crucial for answering or contextualizing the 'question', 'drivers', and 'queries', provide historical precedent,
+          crucial for answering or contextualizing the 'question' and 'drivers', provide historical precedent,
           and/or inform baserates.
           - "maybe": Assign if the 'page_summary' indicates some potential relevance, but it is not clear enough to confidently assign "yes".
           - "no": Assign if the 'page_summary' suggests the full article is unlikely to contain any relevant 
-          information or historical precedent, or is off-topic with respect to the 'question', 'drivers', and 'queries'.
+          information or historical precedent, or is off-topic with respect to the 'question' and 'drivers'.
 
       - "score": A numerical score from 1 to 10, reflecting the likelihood that the full article will contain useful information.
 
       Important Considerations:
 
-      - Base your 'decision' and 'reason' SOLELY on the provided 'page_summary', 'question', 'drivers', and 'queries'. Do NOT use external 
+      - Base your 'decision' and 'reason' SOLELY on the provided 'page_summary', 'question' and 'drivers'. Do NOT use external 
       knowledge or make assumptions about the full article's content beyond what the 'page_summary' reasonably implies.
       - The primary goal is to efficiently filter for pages that are strong candidates for providing valuable information.
 
@@ -217,8 +217,6 @@ wiki_pre_select_pages:
       <question> {{ question }} </question>
 
       <drivers> {{ drivers }} </drivers>
-      
-      <queries> {{ queries }} </queries>
 
 wiki_pre_extract_score:
   system_message: >
@@ -315,17 +313,20 @@ wiki_pre_consolidate_summaries:
 
       - Think through the order of the information you present.
 
-    - "consolidated_summary": A well-structured summary (14-18 sentences, text string) that integrates the key points from the provided 'wik_summaries' dictionary.
+    - "consolidated_summary": A well-structured summary (14-18 sentences, text string) that integrates the key points from the provided 'wiki_summaries' dictionary.
 
       - Focus on clarity and coherence, ensuring that the summary flows logically and captures the essence of the information.
 
       - Do not include any prefaces or introductory phrases; just present the consolidated content directly. Avoid verbosity. No intro or conclusion sentences.
 
-      - Be specific and include details such as facts, dates, and numbers that are relevant. write in prose.
+      - Be specific and include details such as facts, dates, and numbers that are relevant. Write in prose.
+
+      - Do NOT reference the drivers or question in your response.
 
     Important:
 
-    - Use only the provided 'wiki_summaries' dictionary. Do NOT incorporate external facts or speculate.
+    - Use only the provided 'wiki_summaries' dictionary. Do NOT incorporate external facts or speculate. If a summary is not relevant, do not include it in the 
+    consolidated summary. If you lack sufficient information to write a comprehensive summary, write fewer sentences.
 
     - Ensure that the summary is comprehensive yet concise, avoiding unnecessary repetition or filler content. Avoid transition phrases. Exclude vague information.
 
