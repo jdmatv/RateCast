@@ -14,7 +14,7 @@ AUTH_HEADERS = {"headers": {"Authorization": f"Token {METACULUS_TOKEN}"}}
 LOG_FILE = "logs/request_log.json"
 LOG_LOCK = threading.Lock()
 
-def setup_logger(name: str = "ratecast_logger", level=logging.DEBUG) -> logging.Logger:
+def setup_logger(name: str = "ratecast_logger", level=logging.DEBUG, log_path="logs/main.log") -> logging.Logger:
     """
     Set up a logger with console output and formatting.
 
@@ -25,10 +25,14 @@ def setup_logger(name: str = "ratecast_logger", level=logging.DEBUG) -> logging.
     Returns:
         logging.Logger: Configured logger instance.
     """
+
+    if not os.path.exists("logs"):
+        os.makedirs("logs")
+
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
-    file_handler = logging.FileHandler('logs/main.log', mode='a')
+    file_handler = logging.FileHandler(log_path, mode='a')
     file_handler.setLevel(level)
 
     formatter = logging.Formatter(
@@ -127,7 +131,7 @@ def get_open_questions_25q2():
 
 def count_message_tokens(
     messages: list[dict],
-    model_name: str = "gpt-4.1-mini"
+    model_name: str = "gpt-4o"
 ) -> int:
     """
     Count the number of tokens in a list of messages for a specific model.
@@ -182,7 +186,7 @@ def run_with_rate_limit_threaded(
     iterable,
     static_kwargs=None,
     max_workers=10,
-    tqdm_desc="Processing",
+    tqdm_desc=None,
     rate_limit_per_10_sec=10
 ):
     """

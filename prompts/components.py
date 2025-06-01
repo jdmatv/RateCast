@@ -164,14 +164,51 @@ def wiki_summary_relevance(
     elif out_type == "discrete":
         return response.score
 
-def extract_wiki_sections(
+def extract_wiki_section(
+    section: str,
+    drivers: list[str],
+    model: str="qwen3:8b",
+    max_retries: int=3
+) -> str:
+    """
+    Extract relevant sections from a Wikipedia page based on the queries and drivers.
+    """
+
+    messages = prompt_manager.render_prompt(
+        article=section,
+        prompt_name="wiki_pre_extract_score",
+        drivers=", ".join(drivers),
+        think="/think"
+    )
+
+    service = CompletionsService()
+
+    class SectionExtractionResponse(BaseModel):
+        paragraph_summary: str
+        score: int
+        extraction_reasoning: str
+        extracted_gold: str
+
+    response = completions_with_retry(
+        max_retries=max_retries, 
+        validation_model=SectionExtractionResponse,
+        messages=messages,
+        model_name=model,
+        service=service
+    )
+    
+    return response.extracted_gold.strip()
+
+def extract_wiki_sections_parallel(
     page_name: str,
     drivers: list[str],
     bad_model: str="qwen3:8b",
     good_model: str="qwen3:8b",
     filter_cycles: int=1,
     max_retries: int=3,
-    max_sections: Optional[int] = None
+    max_sections: Optional[int] = None,
+    max_workers: int = 10,
+    rate_limit: int = 10
 ):
     """
     Extract relevant sections from a Wikipedia page based on the queries and drivers.
@@ -182,32 +219,18 @@ def extract_wiki_sections(
     if max_sections is not None:
         wiki_full_text = wiki_full_text[:max_sections]
     
-    extracted_summaries = []
-    for section in wiki_full_text:
-        messages = prompt_manager.render_prompt(
-            article=section,
-            prompt_name="wiki_pre_extract_score",
-            drivers=", ".join(drivers),
-            think="/think"
-        )
-
-        service = CompletionsService()
-
-        class SectionExtractionResponse(BaseModel):
-            paragraph_summary: str
-            score: int
-            extraction_reasoning: str
-            extracted_gold: str
-
-        response = completions_with_retry(
-            max_retries=max_retries, 
-            validation_model=SectionExtractionResponse,
-            messages=messages,
-            model_name=bad_model,
-            service=service
-        )
-
-        extracted_summaries.append(response.extracted_gold)
+    extracted_summaries = run_with_rate_limit_threaded(
+        func=extract_wiki_section,
+        iterable=wiki_full_text,
+        static_kwargs={
+            "drivers": drivers,
+            "model": bad_model,
+            "max_retries": max_retries
+        },
+        max_workers=max_workers,
+        tqdm_desc=f"Reading {page_name}",
+        rate_limit_per_10_sec=rate_limit
+    )
     
     full_extraction = " ".join([i.strip() for i in extracted_summaries if i.strip()!=""])
     
@@ -224,10 +247,43 @@ def filter_wikipedia_output(
 ) -> str:
     
     if extraction.strip() == "":
-        return extraction. strip()
+        return extraction.strip()
     
     messages = prompt_manager.render_prompt(
         prompt_name="wiki_pre_remove_irrelevant_info",
+        extracted_gold=extraction,
+        drivers=", ".join(drivers),
+        think="/no_think"
+    )
+
+    service = CompletionsService()
+
+    class FinalExtractionResponse(BaseModel):
+        reasoning: str
+        filtered_gold: str
+    
+    response = completions_with_retry(
+        max_retries=max_retries, 
+        validation_model=FinalExtractionResponse,
+        messages=messages,
+        model_name=model,
+        service=service
+    )
+    
+    return response.filtered_gold.strip()
+
+def filter_background_output(
+    model: str,
+    drivers: list[str],
+    extraction: str,
+    max_retries: int = 3
+) -> str:
+    
+    if extraction.strip() == "":
+        return extraction.strip()
+    
+    messages = prompt_manager.render_prompt(
+        prompt_name="wiki_pre_remove_irrelevant_info_edit",
         extracted_gold=extraction,
         drivers=", ".join(drivers),
         think="/no_think"
@@ -293,6 +349,9 @@ def review_wiki_pages(
     """
     Review a list of Wikipedia pages and return a list of relevant pages.
     """
+    # remove duplicates
+    links = [link for link in links if link not in existing_pages]
+
     messages = prompt_manager.render_prompt(
         prompt_name="wiki_pre_select_new_pages",
         question=question_metadata.get("question", ""),
@@ -368,3 +427,8 @@ def review_wiki_pages_parallel(
         model=model,
         max_retries=max_retries
     )
+
+def check_relevance_with_filter(item, question_metadata, drivers, model, mode, threshold):
+    result, summary = item
+    score = wiki_summary_relevance(question_metadata, summary, drivers, model, mode)
+    return result if score >= threshold else None

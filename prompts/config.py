@@ -89,7 +89,7 @@ class PromptManager:
                 "role": "user",
                 "content": rendered_user_content
             })
-            rendered_field_info.append(f"User Message (length: {len(rendered_user_content)} chars)")
+            rendered_field_info.append(f"User Message (length: {len(rendered_user_content.split())} words)")
 
         # Check for unused arguments (too many args provided)
         provided_args = set(kwargs.keys())

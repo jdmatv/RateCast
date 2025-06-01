@@ -32,6 +32,8 @@ MODEL_NAME_DIC = {
     'qwen3:4b': 'ollama/qwen3:4b',
     'qwen3:8b': 'qwen/qwen3-8b:free',
     'qwen3:14b': 'ollama/qwen3:14b',
+    'qwen3:32b': 'qwen/qwen3-32b',
+    'qwen3:235b': 'qwen/qwen3-235b-a22',
     'llama3.2': 'ollama/llama3.2:latest'
 }
 
@@ -310,7 +312,7 @@ class CompletionsService:
         """
         Generic method to get completion. Determines provider based on model name.
         """
-        logger.info(f"Getting completion for model: {model_name}. Message length: {count_message_tokens(messages, model_name)} tokens.")
+        logger.info(f"Getting completion for model: {model_name}. Message length: {count_message_tokens(messages)} tokens.")
 
         full_model_name = MODEL_NAME_DIC.get(model_name, model_name)
 
@@ -319,6 +321,7 @@ class CompletionsService:
         elif any(keyword in full_model_name.lower() for keyword in ["gpt", "o3", "o4"]): 
             return self.get_openai_completion(full_model_name, messages, temperature, max_tokens)
         elif "ollama" in full_model_name.lower():
+            logger.warning(f'Running local ollama model {full_model_name}!')
             return self.get_ollama_completion(full_model_name, messages)
         elif "qwen/" in full_model_name.lower():
             return self.get_openrouter_completion(full_model_name, messages, temperature, max_tokens)

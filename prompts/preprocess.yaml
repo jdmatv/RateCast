@@ -164,7 +164,7 @@ pre_drivers_to_queries:
 
     <resolution_criteria> {{ resolution_criteria }} </resolution_criteria>
 
-    <driver> {{ driver }} </driver>
+    <driver> {{ drivers }} </driver>
 
 wiki_pre_select_pages:
     system_message: >
@@ -249,11 +249,12 @@ wiki_pre_extract_score:
 
       - If the score is 1-2, return an empty string.
 
-      - If score is 3–5: Return 1-3 factual sentences from the text.
+      - If score is 3–5: Return 1-2 factual sentences from the text.
 
       - If score is 6–10: Return 5–8 factual sentences from the text.
 
-      - Do not add prefaces like “this is relevant to the question…” Just output the clearest, most concise nuggets of useful information. Do not reference the drivers.
+      - Do not add prefaces like “this is relevant to the question…” Just output the clearest, most concise nuggets of useful information. Do not reference the drivers. 
+      Use active voice and write in prose.
 
     Important:
 
@@ -330,7 +331,7 @@ wiki_pre_consolidate_summaries:
 
     - Ensure that the summary is comprehensive yet concise, avoiding unnecessary repetition or filler content. Avoid transition phrases. Exclude vague information.
 
-    - Write in prose. Do not directly reference the summaries, the question, or the drivers in the summary. Present the information clearly and directly.
+    - Write in prose. Do not directly reference the summaries, the question, or the drivers in the summary. Present the information clearly and directly. Use active voice.
 
     <wiki_summaries> {{ wiki_summaries }} </wiki_summaries>
 
@@ -346,7 +347,7 @@ wiki_pre_select_new_pages:
   user_template: >
     Review the 'new_pages' list and identify those most likely to contain valuable context for the provided 'question', 'drivers', and 
     'background'. 'existing_pages' are page names that have already been reviewed and are relevant. Select only the candidate page 
-    names in 'new_pages' which are most likely to contain valuable context.
+    names in 'new_pages' which are most likely to contain valuable context. Do not return any page names in 'existing_pages'.
 
     Return a valid JSON object with these exact fields:
 
@@ -365,3 +366,32 @@ wiki_pre_select_new_pages:
     <question> {{ question }} </question>
 
     <background> {{ background }} </background>
+
+wiki_pre_remove_irrelevant_info_edit:
+  system_message: >
+    You are a specialized AI assistant with expertise in editing and filtering out irrelevant and vague information from textual documents.
+    You focus on factual details and relevance.{{ think }}
+  user_template: >
+    Carefully review the provided 'extracted_gold' content in the context of the 'drivers'.
+    Your task is to identify and remove any information that does not pertain to the 'drivers' or provide context for better understanding
+    the topic with respect to the 'drivers'. Focus only on what is explicitly stated, not inferred. If something seems too vague, remove it.
+    You should also consolidate sentences that are repetitive by omitting them, and editing for clarity and logical sentence order. Write in prose,
+    and use active voice.
+
+    Return a valid JSON object with these exact fields:
+
+    - "reasoning": A chain of thought (15-20 sentences) of what is relevant or what is not, and how you determined what to edit or remove.
+
+    - "filtered_gold": The original 'extracted_gold' text string with all irrelevant information removed from the string.
+
+    Important:
+
+    - Use only the 'extracted_gold' and 'drivers'. Do NOT incorporate external facts or speculate.
+
+    - Relevance is determined by whether the content contextualizes the 'drivers'. It doesn't need to be directly about the drivers, 
+    but it should provide useful background or context that helps understand the drivers better.
+
+
+    <extracted_gold> {{ extracted_gold }} </extracted_gold>
+
+    <drivers> {{ drivers }} </drivers>

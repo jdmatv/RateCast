@@ -4,7 +4,6 @@ from typing import Optional
 from apis.wikipedia import get_wiki_links, search_wiki
 import random
 from libs.utils import logger
-from prompts.components import wiki_summary_relevance
 
 
 def validate_json_with_retry(
@@ -19,6 +18,7 @@ def validate_json_with_retry(
         try:
             return model.model_validate_json(json_str)
         except ValidationError as e:
+            logger.error(f'Validation error, bad JSON. Retrying attempt {attempt+1}')
             system_prompt = "Repair the JSON string. It should meet this schema: {schema}. Return a valid JSON string only."
             model_source = "{"+", ".join(f'"{k}": {v}' for k, v in model.__annotations__.items())+"}"
             service = CompletionsService()
@@ -27,7 +27,7 @@ def validate_json_with_retry(
                     {"role": "system", "content": system_prompt.format(schema=model_source)},
                     {"role": "user", "content": json_str}
                 ],
-                model_name="qwen3:1.7b"
+                model_name="qwen3:8b"
             )
 
     raise ValueError(f"Failed to validate JSON after {max_retries} attempts.")
@@ -73,10 +73,5 @@ def search_wiki_queries(
         results.extend(search_results)
 
     return list(set(results))
-
-def check_relevance_with_filter(item, question_metadata, drivers, model, mode, threshold):
-    result, summary = item
-    score = wiki_summary_relevance(question_metadata, summary, drivers, model, mode)
-    return result if score >= threshold else None
     
     
