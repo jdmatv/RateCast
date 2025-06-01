@@ -1,10 +1,41 @@
 import json
 import requests
 import os
+import logging
+import sys
 
 METACULUS_TOKEN = os.getenv("METACULUS_TOKEN")
 API_BASE_URL = "https://www.metaculus.com/api"
 AUTH_HEADERS = {"headers": {"Authorization": f"Token {METACULUS_TOKEN}"}}
+
+def setup_logger(name: str = "ratecast_logger", level=logging.DEBUG) -> logging.Logger:
+    """
+    Set up a logger with console output and formatting.
+
+    Args:
+        name (str): Name of the logger.
+        level: Logging level (e.g., logging.INFO, logging.DEBUG).
+
+    Returns:
+        logging.Logger: Configured logger instance.
+    """
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+
+    file_handler = logging.FileHandler('logs/main.log', mode='a')
+    file_handler.setLevel(level)
+
+    formatter = logging.Formatter(
+        fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    return logger
+
+logger = setup_logger()
 
 def list_posts_from_tournament(
     tournament_id: int, 

@@ -5,6 +5,7 @@ from prompts.utils import search_wiki_queries
 from apis.wikipedia import get_wiki_summary
 from typing import Optional
 from tqdm import tqdm
+from libs.utils import logger
 
 def get_all_wiki_queries(
     question_metadata: dict
@@ -86,7 +87,7 @@ def gen_background_pipeline1(
     )
 
     if len(relevant_pages) == 0:
-        print(f"\nNo relevant wikipedia pages identified.\n")
+        logger.warning(f"\nNo relevant wikipedia pages identified.\n")
         return "", drivers, []
 
     print(f"\nFirst Reading List: \n --{'\n --'.join(relevant_pages)}\n")

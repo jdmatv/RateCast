@@ -6,6 +6,7 @@ from datetime import datetime
 import requests
 from typing import Optional
 from openai import OpenAI
+from libs.utils import logger
 
 
 LOGS_DIR = "logs"
@@ -69,7 +70,7 @@ def map_api_model_to_balance_key(api_model_name, initial_balance_keys):
 
     # Fallback: if no specific mapping, return None or a default key.
     # This means balance tracking might not work for this model if no key is found.
-    print(f"Warning: Could not map API model '{api_model_name}' to a known balance key.")
+    logger.warning(f"Could not map API model '{api_model_name}' to a known balance key.")
     return None
 
 class CompletionsService:

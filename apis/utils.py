@@ -1,5 +1,6 @@
 import re
 from bs4 import BeautifulSoup
+from libs.utils import logger
 
 def extract_text_from_html_part(html_part_str):
     """
@@ -30,12 +31,13 @@ def wiki_split_html(html_doc):
     content_container = soup.find('div', class_='mw-parser-output')
     
     if not content_container:
-        print("Warning: Main content container '.mw-parser-output' not found.")
+        
+        logger.warning("Main content container '.mw-parser-output' not found.")
         # Fallback: try to process the whole document or a significant part
         # For this example, we'll try to process the body if container not found
         content_container = soup.body if soup.body else soup
         if not content_container:
-             print("Error: No processable content found.")
+             logger.error("No processable content found.")
              return []
 
     # Convert the content container (or fallback) to a string to use regex for splitting
