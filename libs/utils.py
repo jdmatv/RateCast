@@ -3,10 +3,16 @@ import requests
 import os
 import logging
 import tiktoken
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
+from time import time, sleep
+from tqdm import tqdm
 
 METACULUS_TOKEN = os.getenv("METACULUS_TOKEN")
 API_BASE_URL = "https://www.metaculus.com/api"
 AUTH_HEADERS = {"headers": {"Authorization": f"Token {METACULUS_TOKEN}"}}
+LOG_FILE = "logs/request_log.json"
+LOG_LOCK = threading.Lock()
 
 def setup_logger(name: str = "ratecast_logger", level=logging.DEBUG) -> logging.Logger:
     """
@@ -136,3 +142,71 @@ def count_message_tokens(
             token_count += len(encoding.encode(message['role']))
 
     return token_count
+
+def log_requests_and_enforce_rate(limit_per_window=10, window_sec=10, log_expiry_sec=60):
+    """Check and update the request log to enforce rate limiting."""
+
+    now = time()
+    log_data = []
+
+    # Load existing log
+    if os.path.exists(LOG_FILE):
+        with open(LOG_FILE, "r") as f:
+            try:
+                log_data = json.load(f)
+            except json.JSONDecodeError:
+                log_data = []
+
+    # Clean expired entries
+    log_data = [ts for ts in log_data if now - ts < window_sec]
+
+    # Reset if the log is stale
+    if log_data and now - max(log_data) > log_expiry_sec:
+        log_data = []
+
+    if len(log_data) >= limit_per_window:
+        sleep_time = window_sec - (now - min(log_data))
+        if sleep_time > 0:
+            logger.warning(f"Self-imposed rate limit exceeded. Sleeping for {sleep_time:.2f} seconds.")
+            sleep(sleep_time)
+
+    # Add current timestamp
+    log_data.append(time())
+
+    # Save log
+    with open(LOG_FILE, "w") as f:
+        json.dump(log_data, f)
+
+def run_with_rate_limit_threaded(
+    func,
+    iterable,
+    static_kwargs=None,
+    max_workers=10,
+    tqdm_desc="Processing",
+    rate_limit_per_10_sec=10
+):
+    """
+    Run a sync function with kwargs on a list of inputs using multithreading
+    while enforcing a rate limit of N requests per 10 seconds.
+    """
+    static_kwargs = static_kwargs or {}
+    results = []
+
+    def wrapped(item):
+        with LOG_LOCK:
+            log_requests_and_enforce_rate(limit_per_window=rate_limit_per_10_sec, window_sec=10)
+
+        return func(item, **static_kwargs)
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(wrapped, item): item for item in iterable}
+
+        for future in tqdm(as_completed(futures), total=len(futures), desc=tqdm_desc):
+            try:
+                result = future.result()
+                results.append(result)
+            except Exception as e:
+                item = futures[future]
+                print(f"Error processing {item}: {e}")
+
+    return results

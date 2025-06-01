@@ -3,6 +3,8 @@ from pydantic import BaseModel, ValidationError
 from typing import Optional
 from apis.wikipedia import get_wiki_links, search_wiki
 import random
+from libs.utils import logger
+from prompts.components import wiki_summary_relevance
 
 
 def validate_json_with_retry(
@@ -45,7 +47,7 @@ def completions_with_retry(
             return validated
 
         except (ValidationError, ValueError) as e:
-            print(f"Attempt {attempt} failed: {e}")
+            logger.error(f"Attempt {attempt} failed: {e}")
 
 def batch_wiki_links(wiki_summaries: list[dict], batch_size) -> tuple[list[str], list[list[str]]]:
     existing_pages = [summary.get('page_name') for summary in wiki_summaries]
@@ -71,5 +73,10 @@ def search_wiki_queries(
         results.extend(search_results)
 
     return list(set(results))
+
+def check_relevance_with_filter(item, question_metadata, drivers, model, mode, threshold):
+    result, summary = item
+    score = wiki_summary_relevance(question_metadata, summary, drivers, model, mode)
+    return result if score >= threshold else None
     
     

@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from typing import Optional, Union
 from apis.wikipedia import get_wiki_full_text_batched
 from tqdm import tqdm
+from libs.utils import logger, run_with_rate_limit_threaded
 
 # this should be a good model e.g. o4-mini thinking
 def decompose_drivers(
@@ -38,6 +39,8 @@ def decompose_drivers(
         model_name=model,
         service=service
     )
+
+    logger.info(f'{len(response.drivers_list)} drivers: {response.drivers_list}')
 
     return response.drivers_list
 
@@ -279,56 +282,22 @@ def draft_wiki_background(
     return response.consolidated_summary.strip()
 
 def review_wiki_pages(
-    wiki_summaries: list[dict],
+    links: list[str],
     question_metadata: dict,
     drivers: list[str],
     background: str,
-    model: str = "qwen3:8b",
-    link_batch_size: int = 40,
-    max_retries: int = 3,
-    max_batches: Optional[int]=None
+    existing_pages: list[str],
+    model: str,
+    max_retries: int
 ) -> list[str]:
     """
-    Review list of Wikipedia pages and return a list of relevant pages.
+    Review a list of Wikipedia pages and return a list of relevant pages.
     """
-    existing_pages, all_links = batch_wiki_links(wiki_summaries, batch_size=link_batch_size)
-
-    if max_batches is not None:
-        all_links = all_links[:max_batches]
-
-    candidate_links = []
-    for links in tqdm(all_links, desc="Reviewing New Wikipedia Links"):
-        messages = prompt_manager.render_prompt(
-            prompt_name="wiki_pre_select_new_pages",
-            question=question_metadata.get("question", ""),
-            existing_pages=", ".join(existing_pages),
-            new_pages=', '.join([f"'{item}'" for item in links]),
-            drivers=", ".join(drivers),
-            background=background,
-            think="/no_think"
-        )
-
-        service = CompletionsService()
-
-        class ReviewResponse(BaseModel):
-            reasoning: str
-            pages_list: list[str]
-        
-        response = completions_with_retry(
-            max_retries=max_retries, 
-            validation_model=ReviewResponse,
-            messages=messages,
-            model_name=model,
-            service=service
-        )
-
-        candidate_links.extend(response.pages_list)
-    
     messages = prompt_manager.render_prompt(
         prompt_name="wiki_pre_select_new_pages",
         question=question_metadata.get("question", ""),
         existing_pages=", ".join(existing_pages),
-        new_pages=', '.join([f"'{item}'" for item in candidate_links]),
+        new_pages=', '.join([f"'{item}'" for item in links]),
         drivers=", ".join(drivers),
         background=background,
         think="/no_think"
@@ -349,3 +318,53 @@ def review_wiki_pages(
     )
     
     return response.pages_list
+
+def review_wiki_pages_parallel(
+    wiki_summaries: list[dict],
+    question_metadata: dict,
+    drivers: list[str],
+    background: str,
+    model: str = "qwen3:8b",
+    link_batch_size: int = 40,
+    max_retries: int = 3,
+    max_batches: Optional[int]=None,
+    max_workers: int = 10,
+    rate_limit: int = 10
+) -> list[str]:
+    """
+    Review list of Wikipedia pages and return a list of relevant pages in parallel.
+    """
+    existing_pages, all_links = batch_wiki_links(wiki_summaries, batch_size=link_batch_size)
+
+    if max_batches is not None:
+        all_links = all_links[:max_batches]
+
+    candidate_links = run_with_rate_limit_threaded(
+        func=review_wiki_pages,
+        iterable=all_links,
+        static_kwargs={
+            "question_metadata": question_metadata,
+            "drivers": drivers,
+            "background": background,
+            "existing_pages": existing_pages,
+            "model": model,
+            "max_retries": max_retries
+        },
+        max_workers=max_workers,
+        tqdm_desc="Reviewing New Wikipedia Links",
+        rate_limit_per_10_sec=rate_limit
+    )
+
+    # flatten the list of candidate links
+    if isinstance(candidate_links, list) and all(isinstance(item, list) for item in candidate_links):
+        candidate_links = [item for sublist in candidate_links for item in sublist]
+
+    return review_wiki_pages(
+        links=candidate_links,
+        question_metadata=question_metadata,
+        drivers=drivers,
+        background=background,
+        existing_pages=existing_pages,
+        model=model,
+        max_retries=max_retries
+    )
