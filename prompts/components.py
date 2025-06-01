@@ -1,9 +1,10 @@
 from libs.service import CompletionsService
 from prompts.config import prompt_manager
-from prompts.utils import completions_with_retry
+from prompts.utils import completions_with_retry, batch_wiki_links
 from pydantic import BaseModel
 from typing import Optional, Union
 from apis.wikipedia import get_wiki_full_text_batched
+from tqdm import tqdm
 
 # this should be a good model e.g. o4-mini thinking
 def decompose_drivers(
@@ -246,3 +247,108 @@ def filter_wikipedia_output(
     )
     
     return response.filtered_gold.strip()
+
+def draft_wiki_background(
+    question_metadata: dict,
+    drivers: list[str],
+    wiki_summaries: list[dict],
+    model: str = "qwen3:8b",
+    max_retries: int = 3
+) -> str:
+    
+    messages = prompt_manager.render_prompt(
+        prompt_name="wiki_pre_consolidate_summaries",
+        question=question_metadata.get("question", ""),
+        drivers=", ".join(drivers),
+        wiki_summaries="\n".join([f"{summary['page_name']}: {summary['page_summary']}" for summary in wiki_summaries]),
+        think="/no_think"
+    )
+
+    service = CompletionsService()
+
+    class BackgroundResponse(BaseModel):
+        reasoning: str
+        consolidated_summary: str
+    
+    response = completions_with_retry(
+        max_retries=max_retries, 
+        validation_model=BackgroundResponse,
+        messages=messages,
+        model_name=model,
+        service=service
+    )
+    
+    return response.consolidated_summary.strip()
+
+def review_wiki_pages(
+    wiki_summaries: list[dict],
+    question_metadata: dict,
+    drivers: list[str],
+    background: str,
+    model: str = "qwen3:1.7b",
+    link_batch_size: int = 40,
+    max_retries: int = 3,
+    max_batches: Optional[int]=None
+) -> list[str]:
+    """
+    Review the Wikipedia pages and return a list of relevant pages.
+    """
+    existing_pages, all_links = batch_wiki_links(wiki_summaries, batch_size=link_batch_size)
+    print(all_links)
+
+    if max_batches is not None:
+        all_links = all_links[:max_batches]
+
+    candidate_links = []
+    for links in tqdm(all_links, desc="Reviewing New Wikipedia Links"):
+        messages = prompt_manager.render_prompt(
+            prompt_name="wiki_pre_select_new_pages",
+            question=question_metadata.get("question", ""),
+            existing_pages=", ".join(existing_pages),
+            new_pages=', '.join([f"'{item}'" for item in links]),
+            drivers=", ".join(drivers),
+            background=background,
+            think="/no_think"
+        )
+
+        service = CompletionsService()
+
+        class ReviewResponse(BaseModel):
+            reasoning: str
+            pages_list: list[str]
+        
+        response = completions_with_retry(
+            max_retries=max_retries, 
+            validation_model=ReviewResponse,
+            messages=messages,
+            model_name=model,
+            service=service
+        )
+
+        candidate_links.extend(response.pages_list)
+    
+    messages = prompt_manager.render_prompt(
+        prompt_name="wiki_pre_select_new_pages",
+        question=question_metadata.get("question", ""),
+        existing_pages=", ".join(existing_pages),
+        new_pages=', '.join([f"'{item}'" for item in candidate_links]),
+        drivers=", ".join(drivers),
+        background=background,
+        think="/no_think"
+    )
+
+    service = CompletionsService()
+
+    class ReviewResponse(BaseModel):
+        reasoning: str
+        pages_list: list[str]
+    
+    response = completions_with_retry(
+        max_retries=max_retries, 
+        validation_model=ReviewResponse,
+        messages=messages,
+        model_name=model,
+        service=service
+    )
+    
+    return response.pages_list

@@ -92,7 +92,7 @@ def gen_background_pipeline1(
         max_total_pages=max_total_pages,
     )
 
-    print(f"Reading list: \n{'\n --'.join(relevant_pages)}")
+    print(f"\nReading list: \n--{'\n --'.join(relevant_pages)}\n")
 
     raw_summaries = [
         extract_wiki_sections(page, drivers, max_sections=max_sections_per_page)
@@ -117,8 +117,7 @@ def gen_background_pipeline2(
     max_sections_per_page: Optional[int] = None
 ) -> tuple[str, list[str], list[dict]]:
     
-    all_links = [get_wiki_links(summary.get('page_name')) for summary in wiki_summaries]
-    all_links = [link for sublist in all_links for link in sublist]  # Flatten the list
+    new_links = 
 
     print(all_links)
     

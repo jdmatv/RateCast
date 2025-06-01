@@ -336,3 +336,31 @@ wiki_pre_consolidate_summaries:
     <drivers> {{ drivers }} </drivers>
 
     <question> {{ question }} </question>
+
+wiki_pre_select_new_pages:
+  system_message: >
+    You are an expert content curator tasked with identifying Wikipedia pages that provide crucial context and factual information. 
+    Your goal is to select the most relevant pages from a given list to enhance understanding of a specific question, its drivers, 
+    and background.{{ think }}
+  user_template: >
+    Review the 'new_pages' list and identify those most likely to contain valuable context for the provided 'question', 'drivers', and 
+    'background'. 'existing_pages' are page names that have already been reviewed and are relevant. Select only the candidate page 
+    names in 'new_pages' which are most likely to contain valuable context.
+
+    Return a valid JSON object with these exact fields:
+
+    - "reasoning": A chain of thought (5-8 sentences) about what makes candidate page names most promising, and which 
+    should be reccomended for review.
+
+    - "pages_list": A JSON array of the most promising page names, written exactly as they appear in 'new_pages'.
+
+     
+    <new_pages> {{ new_pages }} </new_pages>
+
+    <existing_pages> {{ existing_pages }} </existing_pages>
+
+    <drivers> {{ drivers }} </drivers>
+
+    <question> {{ question }} </question>
+
+    <background> {{ background }} </background>

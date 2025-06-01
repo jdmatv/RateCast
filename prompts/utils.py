@@ -1,6 +1,8 @@
 from libs.service import CompletionsService
 from pydantic import BaseModel, ValidationError
 from typing import Optional
+from apis.wikipedia import get_wiki_links
+import random
 
 
 def validate_json_with_retry(
@@ -44,5 +46,16 @@ def completions_with_retry(
 
         except (ValidationError, ValueError) as e:
             print(f"Attempt {attempt} failed: {e}")
+
+def batch_wiki_links(wiki_summaries: list[dict], batch_size) -> tuple[list[str], list[list[str]]]:
+    existing_pages = [summary.get('page_name') for summary in wiki_summaries]
+    all_links = [get_wiki_links(page) for page in existing_pages]
+    all_links = list(set([link for sublist in all_links for link in sublist]) - set(existing_pages))
+    
+    # Shuffle the links to ensure randomness
+    random.shuffle(all_links)
+    
+    # Create batches of links
+    return existing_pages, [all_links[i:i + batch_size] for i in range(0, len(all_links), batch_size)]
     
     
