@@ -6,7 +6,7 @@ from datetime import datetime
 import requests
 from typing import Optional
 from openai import OpenAI
-from libs.utils import logger
+from libs.utils import logger, count_message_tokens
 
 
 LOGS_DIR = "logs"
@@ -104,7 +104,7 @@ class CompletionsService:
                             loaded_balances[key] = float(initial_value) 
                     return loaded_balances
             except (json.JSONDecodeError, IOError) as e:
-                print(f"Error loading balances from {CURRENT_BALANCES_JSON_FILE}: {e}. Re-initializing.")
+                logger.error(f"Error loading balances from {CURRENT_BALANCES_JSON_FILE}: {e}. Re-initializing.")
         
         return {key: float(value) for key, value in self.initial_token_balances.items()}
 
@@ -114,7 +114,7 @@ class CompletionsService:
             with open(CURRENT_BALANCES_JSON_FILE, 'w') as f:
                 json.dump(self.current_token_balances, f, indent=4)
         except IOError as e:
-            print(f"Error saving balances to {CURRENT_BALANCES_JSON_FILE}: {e}")
+            logger.error(f"Error saving balances to {CURRENT_BALANCES_JSON_FILE}: {e}")
 
     def _update_balances_and_log(self, api_model_name, provider, input_tokens, output_tokens):
         """Updates balances and logs the usage to the CSV file."""
@@ -129,7 +129,7 @@ class CompletionsService:
             remaining_balance_for_key = current_balance_val
             self._save_current_balances()
         elif balance_key_used:
-            print(f"Warning: Balance key '{balance_key_used}' (mapped from '{api_model_name}') not found in current balances. Initializing from defaults if possible.")
+            logger.warning(f"Warning: Balance key '{balance_key_used}' (mapped from '{api_model_name}') not found in current balances. Initializing from defaults if possible.")
             if balance_key_used in self.initial_token_balances:
                 initial_val = float(self.initial_token_balances[balance_key_used])
                 tokens_consumed = (input_tokens or 0) + (output_tokens or 0)
@@ -138,9 +138,9 @@ class CompletionsService:
                 remaining_balance_for_key = new_balance
                 self._save_current_balances()
             else:
-                print(f"Error: Balance key '{balance_key_used}' also not in initial_token_balances. Cannot track balance.")
+                logger.error(f"Error: Balance key '{balance_key_used}' also not in initial_token_balances. Cannot track balance.")
         else:
-            print(f"Warning: No balance key found for model '{api_model_name}'. Balance tracking skipped for this call.")
+            logger.warning(f"Warning: No balance key found for model '{api_model_name}'. Balance tracking skipped for this call.")
 
         timestamp = datetime.now().isoformat()
         try:
@@ -148,7 +148,7 @@ class CompletionsService:
                 writer = csv.writer(f)
                 writer.writerow([timestamp, api_model_name, provider, input_tokens or 0, output_tokens or 0, remaining_balance_for_key, balance_key_used or "N/A"])
         except IOError as e:
-            print(f"Error writing to CSV log {LLM_USAGE_CSV_FILE}: {e}")
+            logger.error(f"Error writing to CSV log {LLM_USAGE_CSV_FILE}: {e}")
         return remaining_balance_for_key
 
     def _make_request(self, url, headers, data):
@@ -157,20 +157,20 @@ class CompletionsService:
             response.raise_for_status()  # Raises an HTTPError for bad responses (4XX or 5XX)
             return response.json()
         except requests.exceptions.HTTPError as e:
-            print(f"HTTP Error: {e.response.status_code} - {e.response.text}")
+            logger.error(f"HTTP Error: {e.response.status_code} - {e.response.text}")
             # Try to parse error details if JSON
             try:
                 error_details = e.response.json()
-                print(f"Error details: {error_details}")
+                logger.error(f"Error details: {error_details}")
             except json.JSONDecodeError:
                 pass # No JSON in error response body
             raise
         except requests.exceptions.RequestException as e:
-            print(f"Request Exception: {e}")
+            logger.error(f"Request Exception: {e}")
             raise
         except json.JSONDecodeError as e:
-            print(f"Failed to decode JSON response: {e}")
-            print(f"Response text: {response.text if 'response' in locals() else 'No response object'}")
+            logger.error(f"Failed to decode JSON response: {e}")
+            logger.info(f"Response text: {response.text if 'response' in locals() else 'No response object'}")
             raise
 
     def get_openai_completion(self, model_name, messages, temperature=None, max_tokens=None):
@@ -199,7 +199,7 @@ class CompletionsService:
             
             return completion_content
         except Exception as e:
-            print(f"Error in get_openai_completion: {e}")
+            logger.error(f"Error in get_openai_completion: {e}")
             # Log a failed attempt if possible, though token counts might be unknown
             self._update_balances_and_log(model_name, "OpenAI_Error", 0, 0) # Or some other way to denote failure
             raise
@@ -255,7 +255,7 @@ class CompletionsService:
             
             return completion_content
         except Exception as e:
-            print(f"Error in get_anthropic_completion: {e}")
+            logger.error(f"Error in get_anthropic_completion: {e}")
             self._update_balances_and_log(model_name, "Anthropic_Error", 0, 0)
             raise
     
@@ -269,10 +269,9 @@ class CompletionsService:
             completion_content = response['message']['content']
             clean_output = '{'+completion_content.split('</think>')[-1].strip().\
                 split('{')[-1].split('```')[0].strip()
-            #print(clean_output)
             return clean_output
         except Exception as e:
-            print(f"Error in get_ollama_completion: {e}")
+            logger.error(f"Error in get_ollama_completion: {e}")
             self._update_balances_and_log(model_name, "Ollama_Error", 0, 0)
     
     def get_openrouter_completion(self, model_name, messages, temperature=None, max_tokens=None):
@@ -297,11 +296,10 @@ class CompletionsService:
             completion = client.chat.completions.create(**payload)
             return completion.choices[0].message.content
         except Exception as e:
-            print(f"Error in get_openrouter_completion: {e}")
+            logger.error(f"Error in get_openrouter_completion: {e}")
             # Log a failed attempt if possible, though token counts might be unknown
             raise
         
-
     def get_completion(
         self, 
         model_name: str, 
@@ -312,6 +310,8 @@ class CompletionsService:
         """
         Generic method to get completion. Determines provider based on model name.
         """
+        logger.info(f"Getting completion for model: {model_name}. Message length: {count_message_tokens(messages, model_name)} tokens.")
+
         full_model_name = MODEL_NAME_DIC.get(model_name, model_name)
 
         if "claude" in full_model_name.lower():
@@ -323,5 +323,5 @@ class CompletionsService:
         elif "qwen/" in full_model_name.lower():
             return self.get_openrouter_completion(full_model_name, messages, temperature, max_tokens)
         else:
-            print(f"Warning: Provider for model '{full_model_name}' not explicitly determined. Defaulting to OpenAI.")
+            logger.warning(f"Warning: Provider for model '{full_model_name}' not explicitly determined. Defaulting to OpenAI.")
             return self.get_openai_completion(full_model_name, messages, temperature, max_tokens)

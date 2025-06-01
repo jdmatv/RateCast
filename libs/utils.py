@@ -2,7 +2,7 @@ import json
 import requests
 import os
 import logging
-import sys
+import tiktoken
 
 METACULUS_TOKEN = os.getenv("METACULUS_TOKEN")
 API_BASE_URL = "https://www.metaculus.com/api"
@@ -118,3 +118,21 @@ def get_question_metadata(post_id: int) -> str:
 def get_open_questions_25q2():
     open_qs = get_open_question_ids_from_tournament(tournament_id = "32721")
     return [get_question_metadata(post_id) for _, post_id in open_qs]
+
+def count_message_tokens(
+    messages: list[dict],
+    model_name: str = "gpt-4.1-mini"
+) -> int:
+    """
+    Count the number of tokens in a list of messages for a specific model.
+    """
+    encoding = tiktoken.encoding_for_model(model_name)
+    token_count = 0
+
+    for message in messages:
+        if 'content' in message:
+            token_count += len(encoding.encode(message['content']))
+        if 'role' in message:
+            token_count += len(encoding.encode(message['role']))
+
+    return token_count
