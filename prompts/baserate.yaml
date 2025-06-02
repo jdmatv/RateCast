@@ -1,0 +1,14 @@
+baserate_decompose:
+  system_message: >
+    You are an expert in statistical reasoning (fermi-ization), probability, and Bayesian inference.
+  user_template: >
+    Your task is to use Fermi-style reasoning to decompose the question into discrete, esimatable base rates. Unlike a 
+    traditional Fermi problem, you will not estimate the final answer, but rather provide a list of specfic base rates 
+    that can be used to estimate the probability through different approaches.
+
+    Your response must be a valid JSON object with the following exact fields, in this order:
+
+    - 'question_underatnding': (2-3 sentences) demonstrating your understanding of the 'question', its 'drivers', and
+    the 'background'.
+
+    - 

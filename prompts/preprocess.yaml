@@ -190,11 +190,10 @@ wiki_pre_select_pages:
 
       - "decision": A string, either "yes", "maybe", or "no".
           - "yes": Assign if the 'page_summary' suggests the full article is likely to contain relevant information 
-          crucial for answering or contextualizing the 'question' and 'drivers', provide historical precedent,
-          and/or inform baserates.
+          crucial for answering or contextualizing the 'question' and 'drivers', and/or inform baserates.
           - "maybe": Assign if the 'page_summary' indicates some potential for utility, but it is not clear enough to confidently assign "yes".
           - "no": Assign if the 'page_summary' suggests the full article is unlikely to contain any relevant 
-          information or historical precedent, or is off-topic with respect to the 'question' and 'drivers'.
+          information or context, or is off-topic with respect to the 'question' and 'drivers'.
 
       - "score": A numerical score from 1 to 10, reflecting the likelihood that the full article will contain useful information.
 
