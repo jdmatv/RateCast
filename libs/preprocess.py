@@ -104,6 +104,7 @@ def gen_background_pipeline1(
     question_metadata: dict,
     model: str,
     good_model: str,
+    bad_model: str,
     max_total_pages: int = 5,
     max_results_per_search: int = 3,
     max_workers: int = 10,
@@ -125,8 +126,8 @@ def gen_background_pipeline1(
         max_total_pages=max_total_pages,
         max_workers=max_workers,
         rate_limit=rate_limit,
-        model=model,
-        good_model=good_model
+        model=bad_model,
+        good_model=model
     )
 
     if len(relevant_pages) == 0:
@@ -143,7 +144,6 @@ def gen_background_pipeline1(
             max_workers=max_workers,
             rate_limit=rate_limit,
             model=model,
-            good_model=good_model
         ) 
         for page in relevant_pages
     ]
@@ -164,6 +164,7 @@ def gen_background_pipeline2(
     question_metadata: dict,
     model: str,
     good_model: str,
+    bad_model: str,
     link_batch_size: int = 40,
     max_total_pages: int = 5,
     max_workers: int = 10,
@@ -173,7 +174,7 @@ def gen_background_pipeline2(
 ) -> tuple[str, list[str], list[dict]]:
     
     if len(wiki_summaries) == 0:
-        return background, drivers, full_summaries
+        return background, drivers, wiki_summaries
     
     new_links = review_wiki_pages_parallel(
         wiki_summaries=wiki_summaries,
@@ -197,8 +198,8 @@ def gen_background_pipeline2(
         max_total_pages=max_total_pages,
         max_workers=max_workers,
         rate_limit=rate_limit,
-        model=model,
-        good_model=good_model
+        model=bad_model,
+        good_model=model
     )
 
     # remvove pages that are already in the summaries
@@ -215,7 +216,6 @@ def gen_background_pipeline2(
                 max_workers=max_workers,
                 rate_limit=rate_limit,
                 model=model,
-                good_model=good_model
             ) 
             for page in relevant_pages
         ]

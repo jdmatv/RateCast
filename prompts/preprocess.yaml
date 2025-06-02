@@ -2,11 +2,9 @@ pre_gen_decompose_drivers:
   system_message: >
     You are an expert AI assistant specializing in analytical reasoning, causal decomposition, and strategic foresight.
     Your primary function is to assist a forecasting process by deeply analyzing a question and its background
-    information to identify the critical drivers and underlying factors that will shape the outcome. You excel at
-    dissecting complex problems into their constituent parts, thinking through interconnected systems, and pinpointing
-    key variables that determine future developments{{ think }}.
+    information to identify the critical drivers and underlying factors that will shape the outcome.{{ think }}.
   user_template: >
-    Given the 'question', 'description', and 'resolution_criteria' provided below, please perform a thorough analysis to identify
+    Given the 'question', 'description', and 'resolution_criteria' provided below, perform a thorough analysis to identify
     key drivers influencing the potential outcome.
 
     Your response MUST be a valid JSON object with the following exact fields, in this order:
@@ -16,11 +14,10 @@ pre_gen_decompose_drivers:
         and 'resolution_criteria'. This summary should capture the essence of the scenario and the main point of inquiry.
 
     2.  "factor_consideration":
-        A detailed textual exploration of the potential factors, dynamics, and underlying drivers that could
+        A detailed textual exploration (3-4 sentences) of the potential factors, dynamics, and underlying drivers that could
         influence the outcome related to the 'question'. Think broadly about direct and indirect influences,
         potential catalysts, inhibitors, feedback loops, and interconnected systems. This section should demonstrate a
         comprehensive thought process exploring the problem space before identifying the final list of drivers.
-        (Aim for a substantial paragraph or a few well-developed points).
 
     3.  "drivers_list":
         A JSON array of 4 to 8 distinct string elements. These elements are the key drivers: the critical events,
@@ -40,7 +37,8 @@ pre_gen_decompose_drivers:
       of items in the 'drivers_list'.
 
     - Strive for clarity and precision in your language. Do not use external knowledge beyond what is provided. Do not
-    include dates or quarters in the drivers. Think of drivers as key indicators or factors. Be specific.
+    include dates or quarters in the drivers. Think of drivers as key indicators or factors. Be specific and don't assume the reader 
+    knows the question.
 
 
     <question> {{ question }} </question>
@@ -61,7 +59,7 @@ pre_question_to_queries:
     'background', and 'resolution_criteria'. Your goal is to formulate queries that will help gather the necessary context
     and historical precedent to understand the scenario, address the question comprehensively, and develop baserates.
 
-    Please provide your response as a valid JSON object with the following exact fields, in this order:
+    Provide your response as a valid JSON object with the following exact fields, in this order:
 
     1.  "information_need_summary":
         A concise (1-2 sentences) summary of the primary information needed to address the 'question',
@@ -70,7 +68,7 @@ pre_question_to_queries:
         foundational understanding of whether the scenario is likely.
 
     2.  "scratchpad_query_brainstorm":
-        A textual area for you to brainstorm and list potential Wikipedia search queries. Think broadly about
+        A textual area for you to brainstorm (3-4 sentences) and list potential Wikipedia search queries. Think broadly about
         the 'question', 'background', and 'resolution_criteria'. This section should clearly show your thought 
         process and exploration of different query ideas before finalizing the list. (Aim for several lines of 
         varied ideas, demonstrating your brainstorming).
@@ -125,7 +123,7 @@ pre_drivers_to_queries:
         and how it might influence the scenario described.
 
     2.  "scratchpad_query_brainstorm":
-        A textual area for you to brainstorm and list potential Wikipedia search queries. Think broadly about
+        A textual area for you to brainstorm (3-4 sentences) and list potential Wikipedia search queries. Think broadly about
         the 'driver' in the context of the 'question' and 'background_info'. Consider items such as:
         - Key entities (people, organizations, specific events, technologies, locations) associated with the driver.
         - Historical context, origins, or precedents for the driver.
@@ -168,38 +166,33 @@ pre_drivers_to_queries:
 
 wiki_pre_select_pages:
     system_message: >
-      You are a highly specialized AI assistant with expertise in evaluating the potential relevance of documents for 
+      You are a specialized AI assistant with expertise in evaluating the potential relevance of documents for 
       answering specific questions. Your primary function is to support a forecasting bot by rapidly assessing Wikipedia 
-      page summaries to determine if the full page likely contains valuable information for a given question. You excel at 
-      identifying promising leads from brief descriptions and filtering out pages unlikely to yield pertinent details based 
-      on their summaries{{ think }}.
+      page summaries to determine if the full page could contain valuable information for a given question.{{ think }}.
     user_template: >
       Carefully analyze the provided 'page_summary' from a Wikipedia article in relation to the 'question' and its 'drivers'. 
-      Your task is to decide whether the full article (based on this summary) is likely to contain information that 
+      Your task is to decide whether the full article (based on this summary) could contain information that 
       would be useful for answering the question or providing context for better understanding it and recent and historical precedent 
       to develop baserates.
 
       Return your findings as a valid JSON object with the following exact fields:
 
-      - "background": (1-2 sentences) demonstrating your understanding of the 'question' and 'drivers'.
+      - "background": (1-2 sentences, string) demonstrating your understanding of the 'question' and 'drivers'.
 
-      - "page_summary": (1-2 sentences) A concise summary of the 'page_summary' provided, focusing on the key points that are 
-          relevant to the 'question' and 'drivers'. This should be a brief synthesis of the main ideas presented in the summary, 
-          highlighting any specific concepts, events, or entities mentioned that are related to the question.  If the topic is not related, do not 
-          make up key points; simply summarize the summary as it is and explain that it is not related to the question.
+      - "page_summary": (1-2 sentences, string) A concise summary of the 'page_summary' provided, focusing on the key points that are 
+          relevant to the 'question' and 'drivers'. This should be a brief synthesis of the main ideas presented in the summary.
+          If the topic is not related, do not make up key points; simply summarize the summary as it is and explain that it is not related to the question.
 
-      - "reason": A concise chain of thought (1-2 sentences) reasoning about your 'decision'.
-          - State what aspects of the 'page_summary' indicate a high potential for the full article to be relevant 
-          to the 'question' and 'drivers',. (e.g., "Summary mentions [specific concept/event/person/historical record] 
-          related to the question's focus on X."), or why the full article is deemed not worth exploring 
-          further based on its summary (e.g., "Summary suggests the page focuses on [different topic/era] not connected 
-          to the question").
+      - "reason": A concise chain of thought (1-2 sentences, string) reasoning about your 'decision'.
+          - State what aspects of the 'page_summary' indicate potential for the full article to be relevant 
+          to the 'question' and 'drivers', or why the full article is deemed not worth exploring 
+          further based on its summary
 
       - "decision": A string, either "yes", "maybe", or "no".
           - "yes": Assign if the 'page_summary' suggests the full article is likely to contain relevant information 
           crucial for answering or contextualizing the 'question' and 'drivers', provide historical precedent,
           and/or inform baserates.
-          - "maybe": Assign if the 'page_summary' indicates some potential relevance, but it is not clear enough to confidently assign "yes".
+          - "maybe": Assign if the 'page_summary' indicates some potential for utility, but it is not clear enough to confidently assign "yes".
           - "no": Assign if the 'page_summary' suggests the full article is unlikely to contain any relevant 
           information or historical precedent, or is off-topic with respect to the 'question' and 'drivers'.
 
@@ -234,7 +227,7 @@ wiki_pre_extract_score:
 
     - "paragraph_summary": (1–4 sentences) A concise summary of the paragraph's main points. Be specific and include details. If the topic is unrelated to the drivers, simply summarize the paragraph with no reference to relevance.
 
-    - "score": A numerical value from 1 to 10 indicating how relevant the paragraph is for understanding or addressing the 'drivers'.
+    - "score": A numerical value from 1 to 10 indicating how relevant the paragraph is for understanding the 'drivers'.
         - 1: Completely unrelated.
         - 2–3: Tangential or minimally relevant.
         - 4–5: Somewhat relevant but not central.
@@ -276,7 +269,7 @@ wiki_pre_remove_irrelevant_info:
 
     Return a valid JSON object with these exact fields:
 
-    - "reasoning": A chain of thought (15-20 sentences) of what is relevant or what is not, and how you determined what to remove.
+    - "reasoning": A chain of thought (8-10 sentences) of what is relevant or what is not, and how you determined what to remove.
 
     - "filtered_gold": The original 'extracted_gold' text string with all irrelevant information removed from the string.
 

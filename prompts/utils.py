@@ -19,6 +19,7 @@ def validate_json_with_retry(
             return model.model_validate_json(json_str)
         except ValidationError as e:
             logger.error(f'Validation error, bad JSON. Retrying attempt {attempt+1}')
+            logger.info(f'bad output: {json_str}')
             system_prompt = "Repair the JSON string. It should meet this schema: {schema}. Return a valid JSON string only."
             model_source = "{"+", ".join(f'"{k}": {v}' for k, v in model.__annotations__.items())+"}"
             service = CompletionsService()

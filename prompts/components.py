@@ -10,7 +10,7 @@ from libs.utils import logger, run_with_rate_limit_threaded
 # this should be a good model e.g. o4-mini thinking
 def decompose_drivers(
     question_metadata: dict, 
-    model: str="qwen3:8b", 
+    model: str, 
     max_retries: int=3
 ) -> list[str]:
     """
@@ -22,7 +22,7 @@ def decompose_drivers(
         question=question_metadata.get("question", ""),
         background=question_metadata.get("description", ""),
         resolution_criteria=question_metadata.get("resolution_criteria", ""),
-        think="/no_think"
+        think="/think"
     )
 
     service = CompletionsService()
@@ -47,7 +47,7 @@ def decompose_drivers(
 # this can be a bad model (e.g., 4o-mini)
 def question_to_queries(
     question_metadata: dict, 
-    model: str="qwen3:8b", 
+    model: str, 
     max_retries: int=3
 ) -> list[str]:
     """
@@ -59,7 +59,7 @@ def question_to_queries(
         question=question_metadata.get("question", ""),
         background=question_metadata.get("description", ""),
         resolution_criteria=question_metadata.get("resolution_criteria", ""),
-        think="/no_think"
+        think="/think"
     )
 
     service = CompletionsService()
@@ -83,7 +83,7 @@ def question_to_queries(
 def drivers_to_queries(
     question_metadata: dict, 
     drivers: list[str],
-    model: str="qwen3:8b",
+    model: str,
     max_retries: int=3
 ) -> list[str]:
     """
@@ -96,7 +96,7 @@ def drivers_to_queries(
         background=question_metadata.get("description", ""),
         resolution_criteria=question_metadata.get("resolution_criteria", ""),
         drivers=", ".join(drivers),
-        think="/no_think"
+        think="/think"
     )
 
     service = CompletionsService()
@@ -122,7 +122,7 @@ def wiki_summary_relevance(
     question_metadata: dict,
     wiki_summary: str,
     drivers: list[str],
-    model: str="qwen3:8b",
+    model: str,
     out_type: str="binary",
     max_retries: int=3
 ) -> float:
@@ -135,7 +135,7 @@ def wiki_summary_relevance(
         page_summary=wiki_summary,
         question=question_metadata.get("question", ""),
         drivers=", ".join(drivers),
-        think="/no_think"
+        think="/think"
     )
 
     service = CompletionsService()
@@ -167,7 +167,7 @@ def wiki_summary_relevance(
 def extract_wiki_section(
     section: str,
     drivers: list[str],
-    model: str="qwen3:8b",
+    model: str,
     max_retries: int=3
 ) -> str:
     """
@@ -178,7 +178,7 @@ def extract_wiki_section(
         article=section,
         prompt_name="wiki_pre_extract_score",
         drivers=", ".join(drivers),
-        think="/think"
+        think="/think" # this has to be think
     )
 
     service = CompletionsService()
@@ -202,8 +202,7 @@ def extract_wiki_section(
 def extract_wiki_sections_parallel(
     page_name: str,
     drivers: list[str],
-    bad_model: str="qwen3:8b",
-    good_model: str="qwen3:8b",
+    model: str,
     filter_cycles: int=1,
     max_retries: int=3,
     max_sections: Optional[int] = None,
@@ -224,7 +223,7 @@ def extract_wiki_sections_parallel(
         iterable=wiki_full_text,
         static_kwargs={
             "drivers": drivers,
-            "model": bad_model,
+            "model": model,
             "max_retries": max_retries
         },
         max_workers=max_workers,
@@ -235,7 +234,7 @@ def extract_wiki_sections_parallel(
     full_extraction = " ".join([i.strip() for i in extracted_summaries if i.strip()!=""])
     
     for _ in range(filter_cycles):
-        full_extraction = filter_wikipedia_output(good_model, drivers, full_extraction)
+        full_extraction = filter_wikipedia_output(model, drivers, full_extraction)
     
     return {"page_name": page_name, "page_summary": full_extraction.strip()}
 
@@ -253,7 +252,7 @@ def filter_wikipedia_output(
         prompt_name="wiki_pre_remove_irrelevant_info",
         extracted_gold=extraction,
         drivers=", ".join(drivers),
-        think="/no_think"
+        think="/think"
     )
 
     service = CompletionsService()
@@ -286,7 +285,7 @@ def filter_background_output(
         prompt_name="wiki_pre_remove_irrelevant_info_edit",
         extracted_gold=extraction,
         drivers=", ".join(drivers),
-        think="/no_think"
+        think="/think"
     )
 
     service = CompletionsService()
@@ -309,7 +308,7 @@ def draft_wiki_background(
     question_metadata: dict,
     drivers: list[str],
     wiki_summaries: list[dict],
-    model: str = "qwen3:8b",
+    model: str,
     max_retries: int = 3
 ) -> str:
     
@@ -318,7 +317,7 @@ def draft_wiki_background(
         question=question_metadata.get("question", ""),
         drivers=", ".join(drivers),
         wiki_summaries="\n".join([f"{summary['page_name']}: {summary['page_summary']}" for summary in wiki_summaries]),
-        think="/no_think"
+        think="/think"
     )
 
     service = CompletionsService()
@@ -359,7 +358,7 @@ def review_wiki_pages(
         new_pages=', '.join([f"'{item}'" for item in links]),
         drivers=", ".join(drivers),
         background=background,
-        think="/no_think"
+        think="/think"
     )
 
     service = CompletionsService()
@@ -383,7 +382,7 @@ def review_wiki_pages_parallel(
     question_metadata: dict,
     drivers: list[str],
     background: str,
-    model: str = "qwen3:8b",
+    model: str,
     link_batch_size: int = 40,
     max_retries: int = 3,
     max_batches: Optional[int]=None,

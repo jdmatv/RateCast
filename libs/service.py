@@ -30,10 +30,10 @@ MODEL_NAME_DIC = {
     'qwen3:0.6b': 'ollama/qwen3:0.6b',
     'qwen3:1.7b': 'ollama/qwen3:1.7b',
     'qwen3:4b': 'ollama/qwen3:4b',
-    'qwen3:8b': 'qwen/qwen3-8b:free',
+    'qwen3:8b': 'qwen/qwen3-8b',
     'qwen3:14b': 'ollama/qwen3:14b',
     'qwen3:32b': 'qwen/qwen3-32b',
-    'qwen3:235b': 'qwen/qwen3-235b-a22',
+    'qwen3:235b': 'qwen/qwen3-235b-a22b',
     'llama3.2': 'ollama/llama3.2:latest'
 }
 
@@ -199,7 +199,10 @@ class CompletionsService:
             
             self._update_balances_and_log(model_name, "OpenAI", input_tokens, output_tokens)
             
-            return completion_content
+            clean_output = '{'+completion_content.split('</think>')[-1].strip().\
+                split('{')[-1].split('```')[0].strip()
+            
+            return clean_output
         except Exception as e:
             logger.error(f"Error in get_openai_completion: {e}")
             # Log a failed attempt if possible, though token counts might be unknown
@@ -255,7 +258,10 @@ class CompletionsService:
             
             self._update_balances_and_log(model_name, "Anthropic", input_tokens, output_tokens)
             
-            return completion_content
+            clean_output = '{'+completion_content.split('</think>')[-1].strip().\
+                split('{')[-1].split('```')[0].strip()
+            
+            return clean_output
         except Exception as e:
             logger.error(f"Error in get_anthropic_completion: {e}")
             self._update_balances_and_log(model_name, "Anthropic_Error", 0, 0)
@@ -296,7 +302,12 @@ class CompletionsService:
 
         try:
             completion = client.chat.completions.create(**payload)
-            return completion.choices[0].message.content
+            completion_content = completion.choices[0].message.content
+
+            clean_output = '{'+completion_content.split('</think>')[-1].strip().\
+                split('{')[-1].split('```')[0].strip()
+            
+            return clean_output
         except Exception as e:
             logger.error(f"Error in get_openrouter_completion: {e}")
             # Log a failed attempt if possible, though token counts might be unknown
