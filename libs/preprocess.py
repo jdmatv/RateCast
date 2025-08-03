@@ -232,19 +232,3 @@ def gen_background_pipeline2(
     else: full_summaries = wiki_summaries.copy()
 
     return background, drivers, full_summaries
-
-    
-    
-
-
-
-
-
-    
-
-
-    
-
-    
-    
-
