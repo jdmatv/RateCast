@@ -1,6 +1,5 @@
 # RateCast Bot
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/jdmatv/jdmatv-ratecast)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/jdmatv/jdmatv-ratecast)
 [![Python Version](https://img.shields.io/badge/python-3.9+-informational)](https://www.python.org/)
 
